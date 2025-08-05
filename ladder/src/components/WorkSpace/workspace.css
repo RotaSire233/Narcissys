@@ -1,0 +1,199 @@
+/* src/components/WorkSpace/workspace.css */
+.workspace-container {
+  display: flex;
+  height: calc(100vh - 60px);
+}
+
+.toolbar {
+  width: 180px;
+  background: #2c3e50;
+  color: white;
+  padding: 15px;
+  overflow-y: auto;
+}
+
+.work-canvas-container {
+  flex: 1;
+  position: relative;
+  overflow: auto;
+  background-color: #f8f9fa;
+}
+
+.canvas-grid-background {
+  background-image: 
+    linear-gradient(#e0e0e0 1px, transparent 1px),
+    linear-gradient(90deg, #e0e0e0 1px, transparent 1px);
+  background-size: 20px 20px;
+  min-height: 100%;
+  position: relative;
+}
+
+.property-panel {
+  width: 280px;
+  background: #ffffff;
+  border-left: 1px solid #e0e0e0;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.elements-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.element-item {
+  padding: 10px;
+  background: #34495e;
+  border-radius: 4px;
+  cursor: grab;
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.element-item:hover {
+  background: #2c3e50;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.element-icon {
+  font-family: "Courier New", Courier, monospace;
+  font-size: 18px;
+  text-align: center;
+  margin-bottom: 5px;
+  letter-spacing: 2px;
+}
+
+.element-name {
+  font-size: 13px;
+  text-align: center;
+}
+
+element-group {
+  cursor: move;
+  transition: all 0.2s ease;
+  pointer-events: bounding-box;
+}
+
+.selected-element {
+  filter: drop-shadow(0 0 5px rgba(33, 150, 243, 0.7));
+}
+
+.connection-source {
+  filter: drop-shadow(0 0 8px rgba(255, 0, 0, 0.7));
+}
+
+.element-symbol {
+  font-family: monospace;
+  font-size: 16px;
+  fill: #37474f;
+  font-weight: bold;
+}
+
+.element-comment {
+  fill: #78909c;
+  text-anchor: middle;
+}
+
+.element-bounding-box {
+  stroke: transparent;
+  stroke-width: 1;
+  rx: 3px;
+  ry: 3px;
+  cursor: move;
+  fill: transparent;
+}
+
+.element-group:hover .element-bounding-box {
+  stroke: rgba(33, 150, 243, 0.5);
+}
+
+.connection-line {
+  stroke-dasharray: 0;
+  /* 添加轻微的描边使连接线更清晰 */
+  stroke-linecap: round;
+}
+
+.panel-section {
+  margin-bottom: 15px;
+}
+
+.panel-section label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+
+.panel-section textarea {
+  width: 100%;
+  height: 80px;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+
+.delete-btn {
+  background-color: #f44336;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* 梯级相关样式 */
+.rung {
+  cursor: pointer;
+}
+
+.rung-background {
+  pointer-events: all;
+}
+
+.rung.selected-rung .rung-background {
+  fill: rgba(33, 150, 243, 0.1);
+}
+
+.rung-number {
+  font-family: monospace;
+  font-size: 14px;
+  fill: #666;
+  font-weight: bold;
+}
+
+.remove-rung-button {
+  cursor: pointer;
+}
+
+.add-rung-button {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  background: #4CAF50;
+  color: white;
+  padding: 10px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  z-index: 10;
+}
+
+.add-rung-button:hover {
+  background: #45a049;
+}
+
+/* 西门子风格的元件样式 */
+.contact-element {
+  stroke: #000;
+  stroke-width: 2;
+  fill: none;
+}
+
+.coil-element {
+  stroke: #000;
+  stroke-width: 2;
+  fill: none;
+}
