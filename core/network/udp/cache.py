@@ -164,7 +164,6 @@ class BaseCache(ABC):
                 self._current_ram -= self._getsizeof(removed)
     
     
-    
 class StaticCache(BaseCache):
     """静态数据缓存"""
     def __init__(self, 
@@ -194,6 +193,17 @@ class StaticCache(BaseCache):
             current_buffer = self._cache.get(buffer.id)
             _logger.info(f' {buffer.uid} 已被添加入缓存 ')
             self._update_cache(buffer.uid, current_buffer, buffer)
+    def get_cache(self, uid: int):
+        with self._lock:
+            if uid not in self._cache:
+                _logger.warning(f' {uid} 缓存中不存在 ')
+                return None
+            else:
+                return self._cache.get(uid)
+    def get_all_data(self) -> dict:
+        """获取所有缓存中的数据"""
+        with self._lock:
+            return dict(self._cache)
 
 class StreamCache(BaseCache):
     """流数据缓存"""
@@ -243,8 +253,15 @@ class StreamCache(BaseCache):
         with self._lock:
             if uid not in self._cache:
                 _logger.warning(f' {uid} 缓存中不存在 ')
+                return None
             else:
                 return self._cache.get(uid)
+                
+    def get_all_data(self) -> dict:
+        """获取所有缓存中的数据"""
+        with self._lock:
+            return dict(self._cache)
+
             
 
     

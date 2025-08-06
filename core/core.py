@@ -18,6 +18,7 @@ udp_manager = UdpManager()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    _start_compenents()
     # 应用启动时执行
     _logger.info("正在初始化网络...")
     mosquitto_exe = os.path.join(ROOT_PATH, "network", "mosquitto", "mosquitto.exe")
@@ -88,7 +89,19 @@ async def create_udp_driver():
         _logger.error(f"创建UDP驱动器时出错: {e}")
         raise HTTPException(status_code=500, detail=f"创建驱动器失败: {str(e)}")
 
-@app.delete("/network/udp/drivers/{driver_id}")
+@app.get("/network/udp/drivers/choose/{driver_id}")
+async def choose_driver_cache(driver_id: str):
+    try:
+        udp_manager.choose_driver_cache(driver_id)
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        _logger.error(f"选取udp对象出错: {e}")
+        raise HTTPException(status_code=500, detail=f"选取udp对象失败: {str(e)}")
+
+
+@app.delete("/network/udp/drivers/delete/{driver_id}")
 async def stop_udp_driver(driver_id: str):
     """
     停止指定的UDP驱动器
@@ -166,6 +179,9 @@ async def get_udp_driver(driver_id: str):
         _logger.error(f"获取UDP驱动器 {driver_id} 信息时出错: {e}")
         raise HTTPException(status_code=500, detail=f"获取驱动器信息失败: {str(e)}")
     
+def _start_compenents():
+    from .api_service import data_service
+
 
 if __name__ == '__main__':
     import uvicorn

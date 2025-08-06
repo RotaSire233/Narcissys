@@ -14,7 +14,6 @@ from .cache import (
     AudStruct, ImgStruct
 )
 from .glob import PortPool
-from utils.logger import log
 from loguru import logger
 
 _logger = logger
@@ -234,6 +233,7 @@ class UdpManager:
         self.drivers = {}
         self.tasks = {}
         self._lock = asyncio.Lock()
+        self.cur_cache = None
         
     async def create_driver(self, **kwargs):
 
@@ -303,18 +303,25 @@ class UdpManager:
             "task_done": task.done() if task else None
         }
 
-    def get_driver_cache(self, driver_id: str):
+    def choose_driver_cache(self, driver_id: str):
         """获取指定驱动器的缓存数据"""
         if driver_id not in self.drivers:
             raise ValueError(f"UDP驱动器 {driver_id} 不存在")
         
         driver: UdpDriver = self.drivers[driver_id]
-        
-        return {
+        self.cur_cache = {
             "static_cache": driver.static_cache,
             "stream_cache": driver.stream_cache
         }
-    
+
     def list_drivers(self):
         """列出所有驱动器信息"""
         return [self.get_driver_info(driver_id) for driver_id in self.drivers.keys()]
+    
+    @property
+    def static_cache(self) -> StaticCache:
+        return self.cur_cache["static_cache"]
+    
+    @property
+    def stream_cache(self) -> StreamCache:
+        return self.cur_cache["stream_cache"]
