@@ -1,5 +1,4 @@
 from openai import OpenAI 
-from utils.logger import log
 from typing import List, Dict
 import json
 import os
@@ -7,14 +6,11 @@ import httpx
 import asyncio
 
 
-_logger = log.get_child_logger(__name__)
-
-
 class ApiKeys:
     def __init__(self):
         with open(os.path.join(os.path.dirname(__file__), "keys/api_keys.json"), "r") as f:
             self.keys_json: Dict = json.load(f)
-        _logger.info(f"Loaded {len(self.keys_json.keys())} API keys")
+            
         self.siliconflow_key = self.keys_json["siliconflow"]
         self.siliconflow_url = "https://api.siliconflow.cn/v1"
         self.qwen_key = self.keys_json["qwen"]
@@ -36,7 +32,6 @@ class ApiConfig:
     def __init__(self):
         if self.api_key is not None or self.base_url is not None:
             self.client = OpenAI(api_key=self.api_key, base_url=self.base_url)
-            _logger.info("API密钥,URL已设置。")
         else:
             raise ValueError("Please set your API key and base URL.")
 

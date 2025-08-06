@@ -3,7 +3,7 @@ from fastapi import APIRouter
 from typing import Dict, Tuple, List
 from dataclasses import dataclass
 
-router = APIRouter(prefix="/api/data", tags=["data"])
+router = APIRouter(prefix="/api/ladder", tags=["ladder"])
 
 # 元件类型
 @dataclass

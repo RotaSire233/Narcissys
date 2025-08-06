@@ -180,7 +180,7 @@ async def get_udp_driver(driver_id: str):
         raise HTTPException(status_code=500, detail=f"获取驱动器信息失败: {str(e)}")
     
 def _start_compenents():
-    from .api_service import data_service, ladder_service
+    from .api_service import data_service, ladder_service, mqtt_server
 
 
 if __name__ == '__main__':
