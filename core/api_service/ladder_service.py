@@ -6,7 +6,7 @@ from dataclasses import dataclass
 router = APIRouter(prefix="/api/ladder", tags=["ladder"])
 
 # 元件类型
-@dataclass
+@dataclass(frozen=True)
 class LadderComponents:
     NORMAL_OPEN = 'normal_open'
     NORMAL_CLOSED = 'normal_closed'

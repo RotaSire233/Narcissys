@@ -198,7 +198,7 @@ class UdpDriver(asyncio.Protocol):
                                        uid=decoded_data["uid"],
                                        name=decoded_data["name"],
                                        timestamp=decoded_data["timestamp"],
-                                       format=decoded_data["format"],
+                                       formats=decoded_data["format"],
                                        size=decoded_data["size"],
                                        addr=addr,
                                        rout=decoded_data["rout"],

@@ -37,6 +37,7 @@ class StaticBufferStruct:
     timestamp: int
     data: Any
     rout: str
+    dtype: str = "static"
     def __init__(self):
         _logger.debug(f' {self.uid}(static): 数据块添加成功 ')
 
@@ -83,6 +84,36 @@ class StreamBufferStruct:
     def get_chunks_count(self) -> int:
         """获取已接收的chunk数量"""
         return len(self.chunks)
+    @property
+    def get_latest_chunk(self) -> Optional[bytes]:
+        """ 返回最新的chunk """
+        if not self.chunks:
+            return None
+        
+        latest_key = next(reversed(self.chunks))
+        return self.chunks[latest_key]
+    def get_next_chunk(self) -> Optional[bytes]:
+        """
+        迭代获取数据，每次调用返回下一个chunk
+        """
+        if not hasattr(self, '_iter_index'):
+            self._iter_index = 0
+            
+        if self._iter_index < len(self.chunks):
+            chunk_key = list(self.chunks.keys())[self._iter_index]
+            chunk_data = self.chunks[chunk_key]
+            self._iter_index += 1
+            return chunk_data
+        else:
+            if self.done:
+                self._iter_index = 0
+            return None
+            
+    def reset_chunk_iterator(self) -> None:
+        """
+        重置迭代器索引
+        """
+        self._iter_index = 0
 
     def __len__(self) -> int:
         """返回所有chunks的总byte"""
@@ -100,6 +131,9 @@ class FltStruct:
 
     stream_length: int
     datas: StreamBufferStruct
+    dtype: str = "flt"
+    
+    
    
 @dataclass(frozen=True)
 class AudStruct:
@@ -116,6 +150,7 @@ class AudStruct:
     bit_depth: int
     channels: int
     datas: StreamBufferStruct
+    dtype: str = "aud"
     
 
 @dataclass(frozen=True)
@@ -128,11 +163,11 @@ class ImgStruct:
     timestamp: int
     rout: str
 
-    format: str
+    formats: str
     size: Tuple[int, int]
     datas: StreamBufferStruct
+    dtype: str = "img"
     
-
 class BaseCache(ABC):
     """缓存方法基类"""
     def __init__(self,

@@ -6,6 +6,18 @@ import numpy as np
 from dataclasses import dataclass
 from loguru import logger as _logger
 
+IMGFORMAT = {
+            '565': 'RGB565',
+            '888': 'RGB888',
+            'GS8': 'Grayscale8',
+            'BIN': 'Binary1'
+            }
+
+AUDFORMAT = {
+            'PCM': 'PCM',
+            'MP3': 'MP3',
+            'AAC': 'AAC'
+            }
 # id/timestamp/
 class BaseDecoder:
     """"解码基函数"""
@@ -167,12 +179,7 @@ class ImgInit(BaseDecoder):
         fmt_code = data[self._ptr:self._ptr+3].decode('ascii')
         self._ptr += 3
         
-        format_map = {
-            '565': 'RGB565',
-            '888': 'RGB888',
-            'GS8': 'Grayscale8',
-            'BIN': 'Binary1'
-        }
+        format_map = IMGFORMAT
         return format_map.get(fmt_code, f'Unknown({fmt_code})')
 
 # id/timestamp/uid/chunck_size/chunck_data/chunck_index
@@ -212,11 +219,7 @@ class AudInit(BaseDecoder):
         fmt_code = data[self._ptr:self._ptr+3].decode('ascii')
         self._ptr += 3
         
-        format_map = {
-            'PCM': 'PCM',
-            'MP3': 'MP3',
-            'AAC': 'AAC'
-        }
+        format_map = AUDFORMAT
         return format_map.get(fmt_code, f'Unknown({fmt_code})')
         
 
