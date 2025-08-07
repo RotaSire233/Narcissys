@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext } from 'react';
+import ladderApi from '../../services/api';
 
 // 导出元件类型 (公共导出)
 export const ELEMENT_TYPES = {
@@ -98,7 +99,7 @@ export function CanvasProvider({ children }) {
   };
   
   // 添加元件到指定梯级（符合梯形图规范）
-  const addElement = (typeId, position, rungIndex = selectedRung) => {
+  const addElement = async (typeId, position, rungIndex = selectedRung) => {
     try {
       // 确保元件不能放置在母线区域（左侧边缘）
       if (position.x < RUNG_LEFT_MARGIN) {
@@ -122,7 +123,22 @@ export function CanvasProvider({ children }) {
       };
       
       const newElement = createElement(typeId, elementPosition);
-      
+      try{
+          await ladderApi.addComponent(
+          {
+            id: newElement.id,
+            bbox: [
+              elementPosition.x - ELEMENT_AREA_WIDTH / 2,
+              elementPosition.y - ELEMENT_AREA_HEIGHT / 2,
+              elementPosition.x + ELEMENT_AREA_WIDTH / 2,
+              elementPosition.y + ELEMENT_AREA_HEIGHT / 2
+            ],
+            type: newElement.type.id,
+          });
+      }catch (error) {
+        console.error("后端添加元件失败:", error);
+      }
+
       setRungs(prev => {
         const newRungs = [...prev];
         const rung = {...newRungs[rungIndex]};
@@ -187,7 +203,12 @@ export function CanvasProvider({ children }) {
   };
   
   // 删除元件
-  const removeElement = (id, rungIndex = selectedRung) => {
+  const removeElement = async (id, rungIndex = selectedRung) => {
+    try {
+      await ladderApi.deleteComponent(id);
+    } catch (error) {
+      console.error("后端删除元件失败:", error);
+    }
     setRungs(prev => {
       const newRungs = [...prev];
       const elementIndex = newRungs[rungIndex].elements.findIndex(el => el.id === id);
