@@ -1,13 +1,14 @@
 import onnxruntime as rt
 from typing import (Union, List, Final, 
                     Optional, Dict, Any,
-                    TypedDict, Tuple)
+                    Tuple)
 import numpy as np
 import threading
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from loguru import logger as _logger
 from dataclasses import dataclass
 import os, json, time
+from typing_extensions import TypedDict
 
 
 """

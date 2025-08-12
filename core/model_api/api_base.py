@@ -11,10 +11,10 @@ from loguru import logger as _logger
 @dataclass(frozen=True)
 class SupportList:
     sil = ("siliconflow","https://api.siliconflow.cn/v1")
-    pad = ("paddle", ""),
-    ope = ("openai", ""),
-    zhi = ("zhipu", ""),
-    qwn = ("qwen", ""),
+    pad = ("paddle", "")
+    ope = ("openai", "")
+    zhi = ("zhipu", "")
+    qwn = ("qwen", "")
     dif = ("dify", "")
 
 @dataclass
@@ -24,9 +24,9 @@ class KeyView:
 
 class ApiKeys:
     def __init__(self):
-        with open(os.path.join(os.path.dirname(__file__), "keys/api_keys.json"), "r") as self.f:
+        with open(os.path.join(os.path.dirname(__file__), "keys/api_key.json"), "r") as self.f:
             self.keys_json: Dict = json.load(self.f)
-        self.info: Dict[str, KeyView]
+        self.info: Dict[str, KeyView] = {}
         self.info["sil"]= KeyView(self.keys_json["siliconflow"],
                                    SupportList.sil[1])
 
@@ -39,7 +39,7 @@ class ApiKeys:
         self.info["zhi"] = KeyView(self.keys_json["zhipu"],
                                SupportList.zhi[1])
         
-        self.info["pad"] = KeyView(self.keys_json["padddle"],
+        self.info["pad"] = KeyView(self.keys_json["paddle"],
                                SupportList.pad[1])
         
         self.info["dif"] = KeyView(self.keys_json["dify"],

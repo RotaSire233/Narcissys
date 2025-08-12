@@ -118,8 +118,15 @@ const ResizablePanels = () => {
 
     return Object.entries(apiKeys).map(([key, value]) => (
       <tr key={key}>
-        <td>{key}</td>
-        <td>{value}</td>
+        <td className="model-name-cell">{key}</td>
+        <td className="api-key-cell">
+          <input 
+            type="text" 
+            value={value} 
+            readOnly
+            style={{ width: '100%', boxSizing: 'border-box' }}
+          />
+        </td>
         <td></td>
       </tr>
     ));
@@ -137,9 +144,8 @@ const ResizablePanels = () => {
           <table className="expandable-table">
             <thead>
               <tr>
-                <th>模型名称</th>
-                <th>API密钥</th>
-                <th>操作</th>
+                <th className="model-name-header">模型名称</th>
+                <th className="api-key-header">API密钥</th>
               </tr>
             </thead>
             <tbody>

@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import ladderApi from '../../services/api';
+import { ladderApi } from '../../services/api';
 
 // 导出元件类型 (公共导出)
 export const ELEMENT_TYPES = {

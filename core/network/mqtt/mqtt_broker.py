@@ -9,11 +9,11 @@ def start_mosquitto(mos_path: str, config_path: str):
     # 检查文件是否存在
     if not os.path.exists(mos_path):
         _logger.error(f"错误: 找不到mosquitto可执行文件: {mos_path}")
-        return False
+        return False, None
         
     if not os.path.exists(config_path):
         _logger.error(f"错误: 找不到配置文件: {config_path}")
-        return False
+        return False, None
     
     try:
         # stdout和stderr设置为PIPE以避免阻塞
@@ -34,8 +34,8 @@ def start_mosquitto(mos_path: str, config_path: str):
             _logger.error("Mosquitto启动失败")
             stdout, stderr = process.communicate()
             _logger.error("错误输出:", stderr.decode('utf-8'))
-            return False
+            return False, None
             
     except Exception as e:
         _logger.error(f"启动Mosquitto时发生错误: {e}")
-        return False
+        return False , None

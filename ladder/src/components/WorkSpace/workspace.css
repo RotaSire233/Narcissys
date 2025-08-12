@@ -282,7 +282,8 @@ element-group {
 .table-container {
   flex: 1;
   overflow: auto;
-  padding: 10px;
+  padding: 0;
+  position: relative;
 }
 
 .expandable-table {
@@ -303,6 +304,8 @@ element-group {
   background-color: #f2f2f2;
   position: sticky;
   top: 0;
+  z-index: 1;
+  margin: 0;
 }
 
 .resizer {
@@ -317,4 +320,29 @@ element-group {
 .resizer.active {
   background-color: #999;
   height: 7px;
+}
+
+.model-name-header,
+.model-name-cell {
+  width: 20%;
+}
+
+.api-key-header,
+.api-key-cell {
+  width: 80%;
+}
+
+.api-key-cell input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 5px;
+  font-family: monospace;
+}
+
+.api-key-cell input:focus {
+  outline: none;
+  border-color: #4CAF50;
+  box-shadow: 0 0 3px rgba(76, 175, 80, 0.3);
 }

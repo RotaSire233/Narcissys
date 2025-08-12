@@ -1,4 +1,4 @@
-from core.core import app, udp_manager
+from core.core import app
 from fastapi import APIRouter
 from typing import Dict, Tuple, List
 from dataclasses import dataclass

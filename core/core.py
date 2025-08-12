@@ -23,7 +23,8 @@ async def lifespan(app: FastAPI):
     mosquitto_exe = os.path.join(ROOT_PATH, "network", "mosquitto", "mosquitto.exe")
     config_file = os.path.join(ROOT_PATH, "configs", "mosquitto.conf")
     broker_status, broker_pid = start_mosquitto(mosquitto_exe, config_file)
-    PID_LIST.append(broker_pid)
+    if broker_pid is not None:
+        PID_LIST.append(broker_pid)
     _logger.info(f"网络初始化完成，Broker状态: {broker_status}")
     
     try:
@@ -193,4 +194,4 @@ async def get_udp_driver(driver_id: str):
         raise HTTPException(status_code=500, detail=f"获取驱动器信息失败: {str(e)}")
     
 def _start_compenents():
-    from .api_service import data_service, ladder_service, mqtt_server
+    from .api_service import data_service, ladder_service, mqtt_server, model_api

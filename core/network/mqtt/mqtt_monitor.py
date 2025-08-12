@@ -124,8 +124,13 @@ class MqttSubscriptionMonitor:
         for topic in topics_to_remove:
             del self.subscription_info[topic]
 
-    def _on_disconnect(self, client, userdata, rc, properties=None):
+    def _on_disconnect(self, *args):
         """断开连接回调"""
+
+        if len(args) >= 3:
+            rc = args[2]
+        else:
+            rc = "未知"
         _logger.info(f"[MQTT-SUB-MONITOR][DISCONNECT] 与Broker断开连接，返回码={rc}")
 
     def start_monitoring(self):

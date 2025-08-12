@@ -1,5 +1,6 @@
 from fastapi import APIRouter, BackgroundTasks
-from typing import Dict, Tuple, List, Optional
+from core.core import app
+from typing import Dict, Any, List, Optional
 from loguru import logger as _logger
 import uuid
 from pydantic import BaseModel
@@ -169,11 +170,12 @@ async def stop_model(model_name: str):
     return {"message": "/onnxapi/stop"}
 
 @router.post("/onnxapi/inference")
-async def inference(model_name: str, input_data: Dict[str, np.ndarray]) -> ResponseStruct:
-
+async def inference(model_name: str, input_data: Dict[str, list]) -> ResponseStruct:
+    np_input_data = {k: np.array(v) for k, v in input_data.items()}
+    
     request_id = str(uuid.uuid4())
     request = RequestStruct(model_name, 
-                            input_data, 
+                            np_input_data, 
                             request_id)
     
     return onnx_api.inference(request)
@@ -181,3 +183,5 @@ async def inference(model_name: str, input_data: Dict[str, np.ndarray]) -> Respo
 @router.get("/onnxapi/info")
 async def get_model_info(model_name: str) -> Optional[Dict[str, Any]]:
     return onnx_api.get_model_info(model_name)
+
+app.include_router(router)
