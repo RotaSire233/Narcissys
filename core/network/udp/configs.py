@@ -10,7 +10,7 @@ __all__ = ['UdpConfigs']
 class UdpConfigs:
     """ UDP 配置类 """
     LISTEN_IP: Final[str] = '0.0.0.0'                     # 监听广播
-    LISTEN_PORT_RANGE: Final[tuple[int, int]] = (1025, 2048) # UDP端口范围
+    LISTEN_PORT_RANGE: Final[tuple[int, int]] = (1025, 1225) # UDP端口范围
     BUFFER_SIZE: Final[int] = 1024                        # socket缓冲区大小
     MAX_WORKERS: Final[int] = 10                          # 并行数据处理线程上限
     QUEUE_SIZE: Final[int] = 100                          # 数据队列大小

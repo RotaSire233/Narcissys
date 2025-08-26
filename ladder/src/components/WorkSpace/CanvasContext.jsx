@@ -1,16 +1,54 @@
+// CanvasContext.jsx
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { ladderApi } from '../../services/api';
 
 // 导出元件类型 (公共导出)
 export const ELEMENT_TYPES = {
-  NORMAL_OPEN: { id: 'normal_open', icon: '| |', name: '常开触点' },
-  NORMAL_CLOSED: { id: 'normal_closed', icon: '|/|', name: '常闭触点' },
-  COIL: { id: 'coil', icon: '( )', name: '输出线圈' },
+  NORMAL_OPEN: { 
+    id: 'normal_open', 
+    icon: '| |', 
+    name: '常开触点',
+    canConnectLeft: true,
+    canConnectRight: true
+  },
+  NORMAL_CLOSED: { 
+    id: 'normal_closed', 
+    icon: '|/|', 
+    name: '常闭触点',
+    canConnectLeft: true,
+    canConnectRight: true
+  },
+  COIL: { 
+    id: 'coil', 
+    icon: '( )', 
+    name: '输出线圈',
+    canConnectLeft: true,
+    canConnectRight: false
+  },
   // 添加新的连接元件类型
-  CONNECT_UP: { id: 'connect_up', icon: '↑', name: '向上连接' },
-  CONNECT_DOWN: { id: 'connect_down', icon: '↓', name: '向下连接' },
-  
+  CONNECT_UP: { 
+    id: 'connect_up', 
+    icon: '↑', 
+    name: '向上连接',
+    canConnectLeft: true,
+    canConnectRight: false  // 右侧不生成连接线
+  },
+  CONNECT_DOWN: { 
+    id: 'connect_down', 
+    icon: '↓', 
+    name: '向下连接',
+    canConnectLeft: true,  // 左侧可以连接
+    canConnectRight: true
+  },
+  CONNECT_RIGHT: {
+    id: 'connect_right',
+    icon: '→',
+    name: '向右连接',
+    canConnectLeft: true,
+    canConnectRight: true
+  },
 };
+
 
 const CANVAS_GRID_SIZE = 20; // 网格尺寸(px)
 
@@ -57,10 +95,67 @@ export const useCanvas = () => {
   return context;
 };
 
+// 连接逻辑判断函数
+ const getConnectionRules = (elementType, connectionSide, adjacentElementType) => {
+    // elementType: 当前元件类型
+    // connectionSide: "left" 或 "right"
+    // adjacentElementType: 相邻元件类型
+    
+    // 特殊规则处理
+    if (elementType === ELEMENT_TYPES.CONNECT_UP.id && connectionSide === "right") {
+      // 向上连接组件右侧不生成连接线
+      return false;
+    }
+    
+    // CONNECT_DOWN 元件不能与母线连接（左侧）
+    if (elementType === ELEMENT_TYPES.CONNECT_DOWN.id && connectionSide === "left" && adjacentElementType === null) {
+      return false;
+    }
+    
+    // CONNECT_RIGHT 元件不能与母线或左侧元件连接
+    if (elementType === ELEMENT_TYPES.CONNECT_RIGHT.id) {
+      if (connectionSide === "left") {
+        // 左侧无论是与母线还是其他元件都不连接
+        return false;
+      }
+    }
+    
+    // 检查当前元件是否支持该侧连接
+    const elementTypeDef = ELEMENT_TYPES[elementType.toUpperCase()] || ELEMENT_TYPES[elementType];
+    if (!elementTypeDef) return false;
+    
+    if (connectionSide === "left" && !elementTypeDef.canConnectLeft) {
+      return false;
+    }
+    
+    if (connectionSide === "right" && !elementTypeDef.canConnectRight) {
+      return false;
+    }
+    
+    // 检查相邻元件是否支持反向连接
+    if (adjacentElementType) {
+      const adjacentTypeDef = ELEMENT_TYPES[adjacentElementType.toUpperCase()] || ELEMENT_TYPES[adjacentElementType];
+      if (!adjacentTypeDef) return false;
+      
+      // 如果是左侧连接，检查相邻元件右侧是否可连接
+      if (connectionSide === "left" && !adjacentTypeDef.canConnectRight) {
+        return false;
+      }
+      
+      // 如果是右侧连接，检查相邻元件左侧是否可连接
+      if (connectionSide === "right" && !adjacentTypeDef.canConnectLeft) {
+        return false;
+      }
+    }
+    
+    return true;
+  };
+
 export function CanvasProvider({ children }) {
   const [rungs, setRungs] = useState([createRung(null, 0)]); // 初始创建一个梯级
   const [selectedElement, setSelectedElement] = useState(null);
   const [selectedRung, setSelectedRung] = useState(0); // 当前选中的梯级索引
+  const [invalidElements, setInvalidElements] = useState([]); // 非法元件ID列表
   
   // 内宽和外宽状态
   const [canvasWidth, setCanvasWidth] = useState(1000); // 外宽
@@ -100,6 +195,30 @@ export function CanvasProvider({ children }) {
       }
     }
     return false;
+  };
+  
+  // 检查指定位置是否可以放置元件（符合梯形图规范）
+  const canPlaceElement = (rungIndex, areaX, areaY, elements) => {
+    // 限制网格范围
+    if (areaX < 0 || areaY < 0 || areaY > 5) return false; // 限制行数为6行
+    
+    // 如果是第一行第一个位置，总是可以放置
+    if (areaX === 0 && areaY === 0) return true;
+    
+    // 检查同行前一个位置是否有元件
+    const hasPreviousInRow = elements.some(el => {
+      const elementArea = findElementArea(el.position);
+      return elementArea.areaY === areaY && elementArea.areaX === areaX - 1;
+    });
+    
+    // 检查同列上一个位置是否有元件
+    const hasAboveInColumn = elements.some(el => {
+      const elementArea = findElementArea(el.position);
+      return elementArea.areaX === areaX && elementArea.areaY === areaY - 1;
+    });
+    
+    // 只有当前一个位置或上一个位置有元件时才能放置
+    return hasPreviousInRow || hasAboveInColumn;
   };
   
   // 计算最大元件X坐标
@@ -151,6 +270,13 @@ export function CanvasProvider({ children }) {
       // 找到放置位置对应的区域
       const targetArea = findElementArea(position);
       
+      // 检查该区域是否符合梯形图放置规则
+      const rung = rungs[rungIndex];
+      if (!canPlaceElement(rungIndex, targetArea.areaX, targetArea.areaY, rung.elements)) {
+        console.log("不符合梯形图放置规则");
+        return null;
+      }
+      
       // 检查该区域是否已被占用
       if (isAreaOccupied(rungIndex, targetArea.areaX, targetArea.areaY)) {
         console.log("区域已被占用，无法放置元件");
@@ -165,7 +291,7 @@ export function CanvasProvider({ children }) {
       
       const newElement = createElement(typeId, elementPosition);
       try{
-          await ladderApi.addComponent(
+          const response = await ladderApi.addComponent(
           {
             id: newElement.id,
             bbox: [
@@ -176,6 +302,11 @@ export function CanvasProvider({ children }) {
             ],
             type: newElement.type.id,
           });
+          
+          // 处理非法元件ID列表
+          if (response && response.valid) {
+            setInvalidElements(response.valid);
+          }
       }catch (error) {
         console.error("后端添加元件失败:", error);
       }
@@ -204,7 +335,6 @@ export function CanvasProvider({ children }) {
   };
   
   // 更新元件位置（保持梯形图规范，只允许水平移动）
-    // 更新元件位置（保持梯形图规范，只允许水平移动）
   const updateElementPosition = (id, newPosition, rungIndex = selectedRung) => {
     // 确保元件不能放置在母线区域（左侧边缘）
     if (newPosition.x < RUNG_LEFT_MARGIN) {
@@ -219,6 +349,12 @@ export function CanvasProvider({ children }) {
       if (elementIndex !== -1) {
         // 找到新位置对应的区域
         const targetArea = findElementArea(newPosition);
+        
+        // 检查该区域是否符合梯形图放置规则
+        if (!canPlaceElement(rungIndex, targetArea.areaX, targetArea.areaY, newRungs[rungIndex].elements)) {
+          console.log("不符合梯形图放置规则");
+          return prev;
+        }
         
         // 检查该区域是否已被占用
         if (isAreaOccupied(rungIndex, targetArea.areaX, targetArea.areaY, id)) {
@@ -246,7 +382,12 @@ export function CanvasProvider({ children }) {
   // 删除元件
   const removeElement = async (id, rungIndex = selectedRung) => {
     try {
-      await ladderApi.deleteComponent(id);
+      const response = await ladderApi.deleteComponent(id);
+      
+      // 处理非法元件ID列表
+      if (response && response.valid) {
+        setInvalidElements(response.valid);
+      }
     } catch (error) {
       console.error("后端删除元件失败:", error);
     }
@@ -305,6 +446,52 @@ export function CanvasProvider({ children }) {
     });
   };
 
+  // 获取元件连接信息
+  const getElementConnections = (element, elements) => {
+    const connections = {
+      left: false,
+      right: false
+    };
+    
+    // 查找相邻元件
+    const elementArea = findElementArea(element.position);
+    
+    // 查找左侧相邻元件
+    const leftElement = elements.find(el => {
+      const area = findElementArea(el.position);
+      return area.areaX === elementArea.areaX - 1 && area.areaY === elementArea.areaY;
+    });
+    
+    // 查找右侧相邻元件
+    const rightElement = elements.find(el => {
+      const area = findElementArea(el.position);
+      return area.areaX === elementArea.areaX + 1 && area.areaY === elementArea.areaY;
+    });
+    
+    // 判断左侧连接
+    if (element.position.x > RUNG_LEFT_MARGIN) { // 不在母线位置
+      if (leftElement) {
+        // 双向检查：当前元件左侧和相邻元件右侧都必须允许连接
+        const currentElementLeftAllowed = getConnectionRules(element.type.id, "left", leftElement.type.id);
+        const leftElementRightAllowed = getConnectionRules(leftElement.type.id, "right", element.type.id);
+        connections.left = currentElementLeftAllowed && leftElementRightAllowed;
+      } else {
+        // 与母线连接：只需检查当前元件左侧是否允许连接
+        connections.left = getConnectionRules(element.type.id, "left", null);
+      }
+    }
+    
+    // 判断右侧连接
+    if (rightElement) {
+      // 双向检查：当前元件右侧和相邻元件左侧都必须允许连接
+      const currentElementRightAllowed = getConnectionRules(element.type.id, "right", rightElement.type.id);
+      const rightElementLeftAllowed = getConnectionRules(rightElement.type.id, "left", element.type.id);
+      connections.right = currentElementRightAllowed && rightElementLeftAllowed;
+    }
+    
+    return connections;
+  };
+
   return (
     <CanvasContext.Provider value={{
       rungs,
@@ -322,7 +509,9 @@ export function CanvasProvider({ children }) {
       canvasWidth,
       contentWidth,
       setCanvasWidth,
-      setContentWidth
+      setContentWidth,
+      invalidElements,
+      getElementConnections  // 添加连接信息函数到context
     }}>
       {children}
     </CanvasContext.Provider>

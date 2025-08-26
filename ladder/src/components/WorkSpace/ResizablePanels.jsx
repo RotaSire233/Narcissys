@@ -1,28 +1,61 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './workspace.css';
-import { LLMApi } from '../../services/api';
+import { LLMApi, MqttApi } from '../../services/api';
 
 const ResizablePanels = () => {
   const [panelSizes, setPanelSizes] = useState([33.33, 33.33, 33.33]);
   const [isDragging, setIsDragging] = useState(false);
   const [dragIndex, setDragIndex] = useState(null);
   const [apiKeys, setApiKeys] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [mqttClients, setMqttClients] = useState({});
+  const [apiLoading, setApiLoading] = useState(false);
+  const [mqttLoading, setMqttLoading] = useState(false);
+  const [apiError, setApiError] = useState(null);
+  const [mqttError, setMqttError] = useState(null);
   const containerRef = useRef(null);
 
   // 获取API密钥信息
   const fetchApiKeys = async () => {
-    setLoading(true);
-    setError(null);
+    setApiLoading(true);
+    setApiError(null);
     try {
       const data = await LLMApi.getList();
       setApiKeys(data);
     } catch (err) {
-      setError(err.message);
+      setApiError(err.message);
       console.error('获取API密钥信息失败:', err);
     } finally {
-      setLoading(false);
+      setApiLoading(false);
+    }
+  };
+
+  // 获取MQTT客户端信息
+  const fetchMqttClients = async () => {
+    setMqttLoading(true);
+    setMqttError(null);
+    try {
+      const data = await MqttApi.getList(); // 现在这会使用缓存机制
+      setMqttClients(data);
+    } catch (err) {
+      setMqttError(err.message);
+      console.error('获取MQTT客户端信息失败:', err);
+    } finally {
+      setMqttLoading(false);
+    }
+  };
+
+  // 添加强制刷新MQTT客户端信息的函数
+  const refreshMqttClients = async () => {
+    setMqttLoading(true);
+    setMqttError(null);
+    try {
+      const data = await MqttApi.refresh(); // 强制获取最新数据
+      setMqttClients(data);
+    } catch (err) {
+      setMqttError(err.message);
+      console.error('刷新MQTT客户端信息失败:', err);
+    } finally {
+      setMqttLoading(false);
     }
   };
 
@@ -40,7 +73,6 @@ const ResizablePanels = () => {
     const posY = e.clientY - containerRect.top;
 
     setPanelSizes(prev => {
-      const totalPercent = 100;
       const newSizes = [...prev];
       
       // 计算当前位置对应的百分比
@@ -85,14 +117,15 @@ const ResizablePanels = () => {
     }
   }, [isDragging, dragIndex]);
 
-  // 页面加载时获取API密钥信息
+  // 页面加载时获取API密钥信息和MQTT客户端信息
   useEffect(() => {
     fetchApiKeys();
+    fetchMqttClients();
   }, []);
 
   // 渲染API密钥表格行
   const renderApiKeysRows = () => {
-    if (loading) {
+    if (apiLoading) {
       return (
         <tr>
           <td colSpan="3">加载中...</td>
@@ -100,10 +133,10 @@ const ResizablePanels = () => {
       );
     }
 
-    if (error) {
+    if (apiError) {
       return (
         <tr>
-          <td colSpan="3">错误: {error}</td>
+          <td colSpan="3">错误: {apiError}</td>
         </tr>
       );
     }
@@ -132,10 +165,111 @@ const ResizablePanels = () => {
     ));
   };
 
-  return (
+    // 渲染MQTT客户端表格行
+  const renderMqttClientRows = () => {
+    if (mqttLoading) {
+      return (
+        <tr>
+          <td colSpan="3">加载中...</td>
+        </tr>
+      );
+    }
+
+    if (mqttError) {
+      return (
+        <tr>
+          <td colSpan="3">错误: {mqttError}</td>
+        </tr>
+      );
+    }
+
+    // 检查数据结构
+    if (!mqttClients || !mqttClients.devices || Object.keys(mqttClients.devices).length === 0) {
+      return (
+        <tr>
+          <td colSpan="3">暂无数据</td>
+        </tr>
+      );
+    }
+
+    // 将对象转换为数组进行渲染
+    return Object.entries(mqttClients.devices).map(([deviceId, deviceInfo]) => (
+      <tr key={deviceId}>
+        <td>{deviceId}</td>
+        <td>{deviceInfo.ip || '未知IP'}</td>
+        <td>
+          {deviceInfo.sensor && Array.isArray(deviceInfo.sensor) && deviceInfo.sensor.length > 0 
+            ? `${deviceInfo.sensor.length}个传感器` 
+            : '无传感器'}
+        </td>
+      </tr>
+    ));
+  };
+
+  // 渲染区域2的设备传感器信息
+  const renderDeviceSensorRows = () => {
+    if (mqttLoading) {
+      return (
+        <tr>
+          <td colSpan="3">加载中...</td>
+        </tr>
+      );
+    }
+
+    if (mqttError) {
+      return (
+        <tr>
+          <td colSpan="3">错误: {mqttError}</td>
+        </tr>
+      );
+    }
+
+    // 从mqttClients中提取设备和传感器信息
+    const deviceSensorData = [];
+    
+    if (mqttClients && mqttClients.devices) {
+      Object.entries(mqttClients.devices).forEach(([deviceId, deviceInfo]) => {
+        // 检查是否有传感器数据
+        if (deviceInfo && deviceInfo.sensor && Array.isArray(deviceInfo.sensor) && deviceInfo.sensor.length > 0) {
+          deviceInfo.sensor.forEach((sensorObj, index) => {
+            // 获取传感器名称（从对象的键获取）
+            const sensorName = Object.keys(sensorObj)[0] || `传感器${index + 1}`;
+            deviceSensorData.push({
+              deviceId,
+              sensorName
+            });
+          });
+        } else {
+          // 如果没有传感器信息，显示设备ID
+          deviceSensorData.push({
+            deviceId,
+            sensorName: '无传感器'
+          });
+        }
+      });
+    }
+
+    if (deviceSensorData.length === 0) {
+      return (
+        <tr>
+          <td colSpan="3">暂无数据</td>
+        </tr>
+      );
+    }
+
+    return deviceSensorData.map((item, index) => (
+      <tr key={`${item.deviceId}-${index}`}>
+        <td>{item.deviceId}</td>
+        <td>{item.sensorName}</td>
+        <td></td>
+      </tr>
+    ));
+  };
+
+    return (
     <div className="resizable-container" ref={containerRef}>
       <div className="panel" style={{ height: `${panelSizes[0]}%` }}>
-        <div className="panel-header">区域 1 - 模型信息表单
+        <div className="panel-header">模型信息表单
           <button onClick={fetchApiKeys} style={{ float: 'right', marginRight: '10px' }}>
             刷新
           </button>
@@ -161,27 +295,22 @@ const ResizablePanels = () => {
       />
       
       <div className="panel" style={{ height: `${panelSizes[1]}%` }}>
-        <div className="panel-header">区域 2</div>
+        <div className="panel-header">MQTT客户端信息
+          <button onClick={refreshMqttClients} style={{ float: 'right', marginRight: '10px' }}>
+            刷新
+          </button>
+        </div>
         <div className="table-container">
           <table className="expandable-table">
             <thead>
               <tr>
-                <th>名称</th>
-                <th>类型</th>
-                <th>值</th>
+                <th className="model-name-header">设备ID</th>
+                <th className="api-key-header">设备IP</th>
+                <th className="api-key-header">传感器数量</th>
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td>项目 1</td>
-                <td>输入</td>
-                <td>True</td>
-              </tr>
-              <tr>
-                <td>项目 2</td>
-                <td>输出</td>
-                <td>False</td>
-              </tr>
+              {renderMqttClientRows()}
             </tbody>
           </table>
         </div>
@@ -193,27 +322,18 @@ const ResizablePanels = () => {
       />
       
       <div className="panel" style={{ height: `${panelSizes[2]}%` }}>
-        <div className="panel-header">区域 3</div>
+        <div className="panel-header">设备传感器列表</div>
         <div className="table-container">
           <table className="expandable-table">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>描述</th>
-                <th>状态</th>
+                <th>设备</th>
+                <th>传感器</th>
+                <th>哈希值</th>
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td>001</td>
-                <td>传感器1</td>
-                <td>正常</td>
-              </tr>
-              <tr>
-                <td>002</td>
-                <td>执行器1</td>
-                <td>故障</td>
-              </tr>
+              {renderDeviceSensorRows()}
             </tbody>
           </table>
         </div>

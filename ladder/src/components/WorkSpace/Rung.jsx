@@ -4,7 +4,7 @@ import CanvasElement from './CanvasElement';
 import './workspace.css';
 
 export default function Rung({ rung, index, isSelected, onSelect, totalRungs, yPosition }) {
-  const { removeRung } = useCanvas();
+  const { removeRung, getElementConnections, rungs } = useCanvas();
   
   // 使用传入的yPosition或计算默认位置
   const rungY = yPosition !== undefined ? yPosition : index * RUNG_HEIGHT;
@@ -49,20 +49,31 @@ export default function Rung({ rung, index, isSelected, onSelect, totalRungs, yP
       if (sortedElements.length > 0) {
         // 从左母线到第一个元件的连接
         const firstElement = sortedElements[0];
-        connections.push({
-          from: { x: 40, y: firstElement.position.y },
-          to: { x: firstElement.position.x - 20, y: firstElement.position.y }
-        });
+        // 使用getElementConnections检查是否应该连接到母线
+        const firstElementConnections = getElementConnections(firstElement, rung.elements);
+        if (firstElementConnections.left) {
+          connections.push({
+            from: { x: 40, y: firstElement.position.y },
+            to: { x: firstElement.position.x - 20, y: firstElement.position.y }
+          });
+        }
         
         // 元件之间的连接 - 每个元件的右节点连接到下一个元件的左节点
         for (let i = 0; i < sortedElements.length - 1; i++) {
           const currentElement = sortedElements[i];
           const nextElement = sortedElements[i + 1];
           
-          connections.push({
-            from: { x: currentElement.position.x + 20, y: currentElement.position.y },
-            to: { x: nextElement.position.x - 20, y: nextElement.position.y }
-          });
+          // 检查两个元件是否应该连接
+          const currentElementConnections = getElementConnections(currentElement, rung.elements);
+          const nextElementConnections = getElementConnections(nextElement, rung.elements);
+          
+          // 只有当当前元件右侧和下一个元件左侧都允许连接时才绘制连接线
+          if (currentElementConnections.right && nextElementConnections.left) {
+            connections.push({
+              from: { x: currentElement.position.x + 20, y: currentElement.position.y },
+              to: { x: nextElement.position.x - 20, y: nextElement.position.y }
+            });
+          }
         }
         
         // 检查是否有向上连接的元件

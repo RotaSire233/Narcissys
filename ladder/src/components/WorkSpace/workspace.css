@@ -125,6 +125,15 @@ element-group {
   filter: drop-shadow(0 0 8px rgba(255, 0, 0, 0.7));
 }
 
+.invalid-element {
+  filter: drop-shadow(0 0 5px rgba(244, 67, 54, 0.7));
+}
+
+.invalid-element .element-bounding-box {
+  stroke: rgba(244, 67, 54, 0.7);
+  stroke-width: 2;
+}
+
 .element-symbol {
   font-family: monospace;
   font-size: 16px;
@@ -345,4 +354,19 @@ element-group {
   outline: none;
   border-color: #4CAF50;
   box-shadow: 0 0 3px rgba(76, 175, 80, 0.3);
+}
+
+.expandable-table .model-name-header,
+.expandable-table .model-name-cell {
+  width: 30%;
+}
+
+.expandable-table .api-key-header,
+.expandable-table .api-key-cell {
+  width: 40%;
+}
+
+.expandable-table th:nth-child(3),
+.expandable-table td:nth-child(3) {
+  width: 30%;
 }

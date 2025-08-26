@@ -42,18 +42,31 @@ const ConnectUpSvg = () => (
 // 向下连接元件SVG - 使用用户提供的down.svg文件
 const ConnectDownSvg = () => (
   <g>
-    <line stroke="#000000" x2="100" y2="49" y1="49" x1="49.43662" stroke-width="3" fill="none"/>
-    <path d="m57.79577,83.28568l-6.5996,11.5493l-6.5996,-11.5493l13.1992,0z" stroke-width="3" stroke="#000000" fill="#000000"/>
-    <line y2="94.9422" x2="51" y1="49" x1="51" stroke-width="3" stroke="#000000" fill="none"/>
+    <line fill="none" stroke-width="3" x1="50.56338" y1="49" y2="49" stroke="#000000"/>
+    <g transform="rotate(180 49.1372 73.1381)">
+      <path fill="#000000" stroke="#000000" stroke-width="3" d="m42.53756,61.76987l6.5996,-11.5493l6.5996,11.5493l-13.1992,0z"/>
+      <line fill="none" stroke="#000000" stroke-width="3" x1="49.33333" y1="96.05555" x2="49.33333" y2="51.11335"/>
+    </g>
   </g>
 );
 
+const ConnectRightSvg = () => (
+  <g>
+    <path d="m75.77705,25.68092l-51.33261,0" transform="rotate(90 50.1107 25.6809)" stroke-width="3" stroke="#000000" fill="none"/>
+    <g transform="rotate(90 74.1682 49.5072)">
+      <path fill="#000000" stroke="#000000" stroke-width="3" d="m67.56858,38.139l6.5996,-11.5493l6.5996,11.5493l-13.1992,0z"/>
+      <line fill="none" stroke="#000000" stroke-width="3" x1="74.36435" y1="72.42468" x2="74.36435" y2="27.48248"/>
+    </g>
+  </g>
+);
 export default function CanvasElement({ element, rungIndex, elementIndex }) {
-  const { removeElement, updateElementPosition, setSelectedElement, selectedElement, snapToGrid, rungs } = useCanvas();
+  const { removeElement, updateElementPosition, setSelectedElement, selectedElement, snapToGrid, rungs, invalidElements } = useCanvas();
   const [dragging, setDragging] = useState(false);
   const elementRef = useRef(null);
   
   const isSelected = selectedElement?.id === element.id;
+  // 检查当前元件是否为非法元件
+  const isInvalid = invalidElements.includes(element.id);
   
   // 计算每个梯级的实际高度（基于其中的元件）
   const calculateRungActualHeight = (rung) => {
@@ -175,6 +188,13 @@ export default function CanvasElement({ element, rungIndex, elementIndex }) {
             <ConnectDownSvg />
           </g>
         );
+      case 'connect_right':
+        // 右向连接元件 - 使用用户提供的SVG文件
+        return (
+          <g transform="scale(0.3) translate(-50, -50)">
+            <ConnectRightSvg />
+          </g>
+        );
       default:
         console.log('Unknown element type:', element.type);
         return (
@@ -191,7 +211,7 @@ export default function CanvasElement({ element, rungIndex, elementIndex }) {
   return (
     <g
       ref={elementRef}
-      className={`element-group ${isSelected ? 'selected-element' : ''}`}
+      className={`element-group ${isSelected ? 'selected-element' : ''} ${isInvalid ? 'invalid-element' : ''}`}
       transform={`translate(${element.position.x}, ${element.position.y})`}
       onMouseDown={handleMouseDown}
       onContextMenu={handleContextMenu}

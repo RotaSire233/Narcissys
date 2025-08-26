@@ -17,7 +17,6 @@ udp_manager = UdpManager()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    _start_compenents()
     # 应用启动时执行
     _logger.info("正在初始化网络...")
     mosquitto_exe = os.path.join(ROOT_PATH, "network", "mosquitto", "mosquitto.exe")
@@ -27,24 +26,12 @@ async def lifespan(app: FastAPI):
         PID_LIST.append(broker_pid)
     _logger.info(f"网络初始化完成，Broker状态: {broker_status}")
     
-    try:
-        from core.api_service.mqtt_server import init_mqtt_subscription_monitor
-        init_mqtt_subscription_monitor()
-        _logger.info("MQTT订阅监控器初始化完成")
-    except Exception as e:
-        _logger.error(f"MQTT订阅监控器初始化失败: {e}")
-    
+    _start_compenents()
+
     await create_udp_driver()
     yield
     
     _logger.info("正在关闭应用，清理资源...")
-
-    try:
-        from core.api_service.mqtt_server import shutdown_subscription_monitor
-        shutdown_subscription_monitor()
-        _logger.info("MQTT订阅监控器已清理")
-    except Exception as e:
-        _logger.error(f"MQTT订阅监控器清理失败: {e}")
     
     for pid in PID_LIST:
         try:
