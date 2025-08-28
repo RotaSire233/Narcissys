@@ -33,7 +33,6 @@ class UdpDriver(asyncio.Protocol):
     """基于 asyncudp 的异步 UDP 驱动器，支持静态/流式数据缓存处理"""
     thread_name = "UdpDriver"
 
-    
 
     def __init__(self,
                  ip: str = None,

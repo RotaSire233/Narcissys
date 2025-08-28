@@ -11,8 +11,8 @@ export default function WorkSpace() {
   const [activeTab, setActiveTab] = useState('workspace1');
 
   const tabs = [
-    { id: 'workspace1', name: '工作区 1' },
-    { id: 'workspace2', name: '工作区 2' }
+    { id: 'workspace1', name: '梯形图画布' },
+    { id: 'workspace2', name: '信息表单' }
   ];
 
   return (

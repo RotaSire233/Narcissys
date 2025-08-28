@@ -5,8 +5,9 @@ import './workspace.css';
 
 export default function PropertyPanel() {
   const canvas = useCanvas();
-  const { selectedElement, removeElement } = canvas;
+  const { selectedElement, removeElement, updateElementProperties } = canvas;
   const [comment, setComment] = useState('');
+  const [name, setName] = useState('');
   // 为选项栏添加状态
   const [selectedOption, setSelectedOption] = useState('');
   // 添加设备和传感器数据状态
@@ -61,8 +62,10 @@ export default function PropertyPanel() {
                 if (sensorKeys.length > 0) {
                   const sensorName = sensorKeys[0];
                   formattedData.push({
-                    value: `${deviceId}:${sensorName}`,
-                    label: `${deviceId}：${sensorName}`,
+                    value: `${deviceId}/${sensorName}`,
+                    label: `${deviceId}/${sensorName}`,
+                    deviceId: deviceId,
+                    sensorName: sensorName,
                     isDevice: false
                   });
                 }
@@ -88,18 +91,30 @@ export default function PropertyPanel() {
   useEffect(() => {
     if (selectedElement) {
       setComment(selectedElement.comments || '');
+      setName(selectedElement.name || '');
       // 初始化选项值
       setSelectedOption(selectedElement.properties.option || '');
     } else {
       setComment('');
+      setName('');
       setSelectedOption('');
     }
   }, [selectedElement]);
   
   const handleSaveComment = () => {
     if (selectedElement) {
-      selectedElement.comments = comment;
-      // 在实际应用中，这里应该更新状态管理器中的元素数据
+      // 更新元件的注释和名称
+      updateElementProperties(selectedElement.id, { 
+        comments: comment,
+        name: name
+      });
+      
+      // 如果有选中的选项，也更新到属性中
+      if (selectedOption) {
+        updateElementProperties(selectedElement.id, {
+          option: selectedOption
+        });
+      }
     }
   };
   
@@ -115,7 +130,9 @@ export default function PropertyPanel() {
     setSelectedOption(value);
     // 暂存到元素属性中但不发送到后端
     if (selectedElement) {
-      selectedElement.properties.option = value;
+      updateElementProperties(selectedElement.id, {
+        option: value
+      });
     }
   };
   
@@ -138,10 +155,22 @@ export default function PropertyPanel() {
   const isContactElement = selectedElement.type.id === 'normal_open' || selectedElement.type.id === 'normal_closed';
   // 检查是否为线圈元件
   const isCoilElement = selectedElement.type.id === 'coil';
+  // 检查是否为连接元件
+  const isConnectionElement = selectedElement.type.id === 'connect_up' || selectedElement.type.id === 'connect_down' || selectedElement.type.id === 'connect_right';
   
   return (
     <div className="property-panel">
       <h3>{selectedElement.type.name} 属性</h3>
+      
+      <div className="panel-section">
+        <label>元件名称</label>
+        <input 
+          type="text"
+          value={name}
+          onChange={e => setName(e.target.value)}
+          placeholder="输入元件名称..."
+        />
+      </div>
       
       {(isContactElement || isCoilElement) ? (
         <div className="panel-section">
@@ -153,6 +182,7 @@ export default function PropertyPanel() {
           ) : deviceSensorData.length > 0 ? (
             <>
               <select value={selectedOption} onChange={handleOptionChange}>
+                <option value="">请选择</option>
                 {deviceSensorData.map((item, index) => (
                   <option 
                     key={index} 
@@ -172,23 +202,21 @@ export default function PropertyPanel() {
             </>
           )}
         </div>
-      ) : (
+      ) : null}
+      
+      {!isConnectionElement && (
         <div className="panel-section">
-          <label>位置</label>
-          <div className="position-info">
-            X: {selectedElement.position.x}px, 
-            Y: {selectedElement.position.y}px
-          </div>
+          <label>描述</label>
+          <textarea 
+            value={comment}
+            onChange={e => setComment(e.target.value)}
+            placeholder="添加元件描述..."
+            style={{ height: '40px' }}
+          />
         </div>
       )}
       
       <div className="panel-section">
-        <label>注释</label>
-        <textarea 
-          value={comment}
-          onChange={e => setComment(e.target.value)}
-          placeholder="添加元件描述..."
-        />
         <button onClick={handleSaveComment}>保存</button>
       </div>
       

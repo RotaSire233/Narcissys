@@ -5,26 +5,44 @@ from loguru import logger as _logger
 from .mqtt_server import cach as mqtt_cache
 from core.ladder_backend import *
 
+
 router = APIRouter(prefix="/api/ladder", tags=["ladder"])
 
 
-ladder_command = LadderCommand()
+ladder_group = LadderGroup()
+compiler = LadderCompile()
 @router.post("/components/ladder/add")
 async def add_component(component: Dict):
     _logger.debug(f"收到：{component}")
     ladder_element = ElementClass(id=component["id"],
+                                  rung=component["rung_index"],
                                   bbox=component["bbox"],
                                   dtype=component["type"])
-    valid = ladder_command.add_component(ladder_element)
+    command: LadderCommand = ladder_group.work_on_ladder(ladder_element.rung)
+
+    valid = command.add_component(ladder_element)
     return {"valid": valid}
 
 @router.post("/components/ladder/delete")
 async def del_component(component: Dict):
-    valid = ladder_command.del_component(component["id"])
+    command: LadderCommand = ladder_group.work_on_ladder(component["rungIndex"])
+    valid = command.del_component(component["id"])
     if valid is not None:
         return {"valid": valid}
     else:
         return {"valid": []}
+    
+@router.post("/components/ladder/compile")
+async def compile_ladder(infos: Dict):
+    compiled = compiler(ladder_group, infos)
+    if compiled["success"]:
+        data_process = process(compiler)
+        if data_process:
+            return {"success": True}
+    else:
+        return {"success": False, "error": "error(Error Engine Will Be Added In Future)"}
+
+    
 
 @router.get("/components/ladder/sensor/get")
 async def get_sensor():

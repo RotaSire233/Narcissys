@@ -5,6 +5,7 @@ import os
 import signal
 from .network.mqtt.mqtt_broker import start_mosquitto
 from .network.udp.udp_driver import UdpDriver, UdpManager
+from .network.udp.expose_client import udp_expose_client
 from loguru import logger as _logger
 import asyncio
 import redis
@@ -26,12 +27,23 @@ async def lifespan(app: FastAPI):
         PID_LIST.append(broker_pid)
     _logger.info(f"网络初始化完成，Broker状态: {broker_status}")
     
+    # 等待MQTT broker完全启动
+    await asyncio.sleep(2)
+    
+    # 启动UDP广播客户端
+    await udp_expose_client.start_broadcasting()
+    _logger.info("UDP广播客户端已启动")
+    
     _start_compenents()
 
     await create_udp_driver()
     yield
     
     _logger.info("正在关闭应用，清理资源...")
+    
+    # 停止UDP广播客户端
+    await udp_expose_client.stop_broadcasting()
+    _logger.info("UDP广播客户端已停止")
     
     for pid in PID_LIST:
         try:

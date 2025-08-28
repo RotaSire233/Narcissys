@@ -12,13 +12,15 @@ class LadderComponents:
     CONNECT_DOWN = 'connect_down'
     CONNECT_RIGHT = 'connect_right'
 
+
 # 元件信息类
 # 元件信息类
 class ElementClass:
-    def __init__(self, id, bbox, dtype, done=False):
+    def __init__(self, id, bbox, dtype, rung ,done=False):
         self.id = id
         self.bbox = bbox
         self.dtype = dtype
+        self.rung = rung
 
         self.done = done
         self.available = False
@@ -26,9 +28,9 @@ class ElementClass:
         self.legal = True
         
         if dtype == LadderComponents.NORMAL_OPEN or dtype == LadderComponents.NORMAL_CLOSED:
-            self.sensor = {}
+            self.sensor = []
         elif dtype == LadderComponents.COIL:
-            self.device = ""
+            self.device = []
         elif dtype == LadderComponents.CONNECT_UP or dtype == LadderComponents.CONNECT_DOWN:
             self.target = None
             
@@ -41,7 +43,6 @@ class LadderCommand:
     def __init__(self):
         self.components_dict: Dict[str, ElementClass] = {}
         self.components_location: List[List[str]] = []
-        self._component_pin: Dict[int, int] = {}
         _logger.info("梯形图组件已初始化完毕")
     def add_component(self, component: ElementClass):
         
@@ -218,4 +219,22 @@ class LadderCommand:
         
         return True
 
+class LadderGroup:
+    def __init__(self):
+        self.group : Dict[int, ElementClass] = {}
+    
+    def add_ladder(self, rung: int,ladder: ElementClass):
+        if rung in self.group: return
+        self.group[rung] = ladder
+    
+    def work_on_ladder(self, rung: int):
+        if rung not in self.group: 
+            self.group[rung] = LadderCommand()
+        return self.group.get(rung)
+    
+    def get_compile_queue(self):
+        compile_queue = []
+        for rung in sorted(self.group.keys()):
+            compile_queue.append(self.group[rung])
+        return compile_queue
 

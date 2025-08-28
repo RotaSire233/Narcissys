@@ -1,4 +1,5 @@
 // ladder/src/services/api.js
+// ladder/src/services/api.js
 const API_BASE_URL = 'http://localhost:5000/api';
 
 // 为MQTT设备数据添加缓存
@@ -9,14 +10,14 @@ const CACHE_DURATION = 5 * 60 * 1000; // 缓存5分钟
 // 梯形图API服务
 export const ladderApi = {
   // 添加元件到后端
-  addComponent: async (component) => {
+  addComponent: async (component, rungIndex) => {
     try {
       const response = await fetch(`${API_BASE_URL}/ladder/components/ladder/add`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(component)
+        body: JSON.stringify({ ...component, rung_index: rungIndex })
       });
       
       if (!response.ok) {
@@ -31,14 +32,14 @@ export const ladderApi = {
   },
   
 
-  deleteComponent: async (componentId) => {
+  deleteComponent: async (componentId, rungIndex) => {
     try {
       const response = await fetch(`${API_BASE_URL}/ladder/components/ladder/delete`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ id: componentId })
+        body: JSON.stringify({ id: componentId, rung_index: rungIndex })
       });
       
       if (!response.ok) {
@@ -48,6 +49,28 @@ export const ladderApi = {
       return await response.json();
     } catch (error) {
       console.error('删除元件失败:', error);
+      throw error;
+    }
+  },
+
+  // 编译梯形图
+  compileLadder: async (ladderData) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/ladder/components/ladder/compile`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(ladderData)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('编译梯形图失败:', error);
       throw error;
     }
   }

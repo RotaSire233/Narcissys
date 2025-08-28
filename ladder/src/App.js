@@ -7,14 +7,14 @@ function App() {
   return (
     <div className="app-container">
       <header className="app-header">
-        <h1>React 工作区组件演示</h1>
-        <p>一个独立的工作区界面，包含工具栏和工作区域</p>
+        <h1>Narcissys 网关工作台</h1>
+        <p>梯形图&物联网&AI 探索现代网关工作台</p>
       </header>
       <main>
         <WorkSpace />
       </main>
       <footer className="app-footer">
-        <span>© 2023 React 工作区组件 | 版本 1.0</span>
+        <span>© 2025 Narcissys | 版本 0.0.1b</span>
       </footer>
     </div>
   );

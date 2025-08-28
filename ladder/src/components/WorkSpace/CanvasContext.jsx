@@ -301,7 +301,7 @@ export function CanvasProvider({ children }) {
               elementPosition.y + ELEMENT_AREA_HEIGHT / 2
             ],
             type: newElement.type.id,
-          });
+          }, rungIndex);
           
           // 处理非法元件ID列表
           if (response && response.valid) {
@@ -382,7 +382,7 @@ export function CanvasProvider({ children }) {
   // 删除元件
   const removeElement = async (id, rungIndex = selectedRung) => {
     try {
-      const response = await ladderApi.deleteComponent(id);
+      const response = await ladderApi.deleteComponent(id, rungIndex);
       
       // 处理非法元件ID列表
       if (response && response.valid) {
@@ -438,9 +438,19 @@ export function CanvasProvider({ children }) {
       const newRungs = [...prev];
       newRungs[rungIndex] = {
         ...newRungs[rungIndex],
-        elements: newRungs[rungIndex].elements.map(el => 
-          el.id === id ? { ...el, properties: { ...el.properties, ...properties } } : el
-        )
+        elements: newRungs[rungIndex].elements.map(el => {
+          // 分离name属性和其它属性
+          let updatedElement = { ...el };
+          if ('name' in properties) {
+            updatedElement.name = properties.name;
+            // 从properties中移除name，避免重复
+            const { name, ...restProperties } = properties;
+            updatedElement.properties = { ...updatedElement.properties, ...restProperties };
+          } else {
+            updatedElement.properties = { ...updatedElement.properties, ...properties };
+          }
+          return el.id === id ? updatedElement : el;
+        })
       };
       return newRungs;
     });

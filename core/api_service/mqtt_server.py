@@ -7,18 +7,9 @@ from dataclasses import dataclass
 from core.core import app
 import json
 from threading import Lock
+import socket
+from .system_config import SystemInfo
 
-
-@dataclass(frozen=True)
-class SystemInfo:
-    SYSTEM_CONFIG = {
-        "endpoint": "localhost",
-        "client_id": "sensor_monitor",
-        "username": "",
-        "password": ""
-    }
-    REGIST = "syst/regist"
-    UNREGIST = "syst/unregist"
 
 class MqttCache:
     def __init__(self):
@@ -83,5 +74,3 @@ async def get_devices():
     return {"devices": devices}
 
 app.include_router(router)
-
-
