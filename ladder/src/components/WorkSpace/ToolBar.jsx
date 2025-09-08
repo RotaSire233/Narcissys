@@ -14,13 +14,29 @@ export default function Toolbar() {
       
       canvas.rungs.forEach(rung => {
         // 为每个rung创建元件列表，只包含必要信息
-        const elements = rung.elements.map(element => ({
-          id: element.id,
-          name: element.name || '',
-          properties: {
-            option: element.properties.option || ''
+        const elements = rung.elements.map(element => {
+          // 基础属性
+          const baseElement = {
+            id: element.id,
+            name: element.name || '',
+            properties: {
+              option: element.properties.option || ''
+            }
+          };
+          
+          // 如果是模型元件，添加模型相关的属性
+          if (element.type.id === 'model') {
+            baseElement.properties = {
+              ...baseElement.properties,
+              modelMode: element.properties.modelMode || '',
+              modelName: element.properties.modelName || '',
+              stream: element.properties.stream || 'false',
+              modelParams: element.properties.modelParams || ''
+            };
           }
-        }));
+          
+          return baseElement;
+        });
         
         // 以rung的index作为键
         ladderData[rung.index] = elements;

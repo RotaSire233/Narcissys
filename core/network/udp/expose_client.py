@@ -86,11 +86,8 @@ class UdpExposeClient:
             
         try:
             discovery_message = {
-                "type": "narcissys/discovery",
-                "service": "system_master",
-                "ip": self.local_ip,
+                "service": "nar/sys",
                 "port": 1883,  # MQTT broker端口
-                "broadcast_port": self.broadcast_port,
                 "timestamp": asyncio.get_event_loop().time()
             }
             

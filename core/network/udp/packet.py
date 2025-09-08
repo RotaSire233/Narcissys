@@ -99,7 +99,7 @@ class BaseDecoder:
         return str_value
     
 
-#id/timestamp/name_length/name
+#id/timestamp/id_len/id
 # 节点发现包
 class FindDecode(BaseDecoder):
     def __init__(self, byte: bytes):
@@ -120,12 +120,6 @@ class StopDecode(BaseDecoder):
     def __init__(self, byte: bytes):
         super().__init__(byte)
 
-#id/timestamp/name_length/sensor_name
-class SensorDecode(BaseDecoder):
-    def __init__(self, byte: bytes):
-        super().__init__(byte)
-        name_len = self._parse_int(byte, 1)
-        self.sensor_name = self._parse_name(byte, name_len)
 
 #id/timestamp/uid/value
 class FloatDecode(BaseDecoder):
@@ -154,13 +148,18 @@ class FltInit(BaseDecoder):
     def __init__(self, byte: bytes):
         super().__init__(byte)
         self.uid = self._parse_int(byte, 4)
-        self.stream_length = self._parse_int32(byte)
+        
 
-#id/timestamp/uid/str_length/value/index
+#id/timestamp/uid/str_length/value/index/done
 class FltValue(StrDecode):
     def __init__(self, byte: bytes):
         super().__init__(byte)
         self.packet_index = self._parse_int32(byte)
+        done = self._parse_int(byte, 1)
+        if done == 1:
+            self.done = True
+        else:
+            self.done = False
 
 #id/timestamp/uid/format/width/height
 class ImgInit(BaseDecoder):
@@ -170,6 +169,8 @@ class ImgInit(BaseDecoder):
         self.format = self._parse_pixel_format(byte)
         self.width = self._parse_int(byte, 2)
         self.height = self._parse_int(byte, 2)
+        self.give_size = self.calculate_image_size()
+        
     def _parse_pixel_format(self, data: bytes) -> str:
         """解析像素格式标识 (3字节ASCII)"""
 
@@ -181,8 +182,23 @@ class ImgInit(BaseDecoder):
         
         format_map = IMGFORMAT
         return format_map.get(fmt_code, f'Unknown({fmt_code})')
+    
+    def calculate_image_size(self):
+        """
+        根据图像格式、宽度和高度计算图像大小（字节）
+        """
+        pixels = self.width * self.height
+        
+        if self.format == 'RGB565':
+            return pixels * 2  # 每个像素2字节
+        elif self.format == 'RGB888':
+            return pixels * 3  # 每个像素3字节
+        elif self.format == 'Grayscale8':
+            return pixels * 1  # 每个像素1字节
+        else:
+            return None
 
-# id/timestamp/uid/chunck_size/chunck_data/chunck_index
+# id/timestamp/uid/chunck_size/chunck_data/chunck_index/done
 class ImgValue(BaseDecoder):
     def __init__(self, byte: bytes):
         super().__init__(byte)
@@ -190,6 +206,11 @@ class ImgValue(BaseDecoder):
         self.chunk_size = self._parse_int32(byte)
         self.chunk_data = self._parse_chunk(byte, self.chunk_size)
         self.chunk_index = self._parse_int32(byte)
+        done = self._parse_int(byte, 1)
+        if done == 1:
+            self.done = True
+        else:
+            self.done = False
     def complete(self):
         return len(self.chunk_data) / self.chunk_size >= 0.95
     def _parse_chunk(self, data, length = 4):
@@ -201,7 +222,7 @@ class ImgValue(BaseDecoder):
 
         return segment
 
-
+        
 class AudInit(BaseDecoder):
     def __init__(self, byte: bytes):
         super().__init__(byte)
@@ -210,7 +231,16 @@ class AudInit(BaseDecoder):
         self.sample_rate = self._parse_int32(byte)   # 4字节采样率
         self.bit_depth = self._parse_int(byte, 1)    # 1字节位深度
         self.channels = self._parse_int(byte, 1)     # 1字节通道数
+        self.stream_length = self._parse_int32(byte)
         
+    def calculate_audio_size(self, duration_seconds: float) -> int:
+        """根据音频参数计算指定时长音频的大小（字节）"""
+        return int(duration_seconds * self.sample_rate * self.bit_depth * self.channels / 8)
+        
+    def get_bitrate(self) -> int:
+        """计算音频比特率 (bps)"""
+        return self.sample_rate * self.bit_depth * self.channels
+
     def _parse_audio_format(self, data: bytes) -> str:
         """解析音频格式标识 (3字节ASCII)"""
         if len(data) < self._ptr + 3:
@@ -226,10 +256,15 @@ class AudInit(BaseDecoder):
 class AudValue(BaseDecoder):
     def __init__(self, byte: bytes):
         super().__init__(byte)
-        self.uid = self._parse_int32(byte)          # 4字节设备UID
-        chunk_size = self._parse_int32(byte)   # 4字节数据块大小
+        self.uid = self._parse_int32(byte)                     # 4字节设备UID
+        chunk_size = self._parse_int32(byte)                   # 4字节数据块大小
         self.chunk_data = self._parse_chunk(byte, chunk_size)  # 原始音频数据
-        self.sample_index = self._parse_int32(byte) # 4字节采样点索引
+        self.sample_index = self._parse_int32(byte)            # 4字节采样点索引
+        done = self._parse_int(byte, 1)
+        if done == 1:
+            self.done = True
+        else:
+            self.done = False
         
     def _parse_chunk(self, data: bytes, length: int) -> bytes:
         """提取原始音频二进制数据"""
@@ -239,232 +274,3 @@ class AudValue(BaseDecoder):
         segment = data[self._ptr:self._ptr+length]
         self._ptr += length
         return segment
-
-@dataclass
-class FindResponse:
-    timestamp: int
-    
-@dataclass
-class HeartBeatResponse:
-    timestamp: int
-
-@dataclass
-class SensorResponse:
-    timestamp: int
-    uid: int
-    name: str
-
-@dataclass
-class StopResponse:
-    timestamp: int
-
-@dataclass
-class FloatResponse:
-    timestamp: int
-    uid: int
-    value: float
-
-@dataclass
-class StringResponse:
-    timestamp: int
-    uid: int
-    chunck: int
-    value: str
-    
-@dataclass
-class AudioResponse:
-    timestamp: int
-    uid: int
-    chunck: int
-    value: bytes
-
-
-class BaseEncoder:
-    """编码基类 """
-    timestamp_bytes: Final[int] = 6 
-
-    def __init__(self):
-        self._buffer = bytearray()
-    
-    def get_bytes(self) -> bytes:
-        """返回编码完成的字节流"""
-        return bytes(self._buffer)
-
-    def _encode_timestamp(self, timestamp: int) -> None:
-        """时间戳编码方法 (整型 -> 6字节大端序)"""
-        if timestamp.bit_length() > 48:  # 6字节 = 48位
-            raise ValueError("Timestamp exceeds 6-byte limit")
-        
-        # 高位补0确保6字节长度
-        self._buffer.extend(struct.pack('>Q', timestamp)[2:8])
-
-    def _encode_float32(self, value: float) -> None:
-        """float32编码方法 (浮点数 -> 4字节IEEE754)"""
-        self._buffer.extend(struct.pack('>f', value))
-
-    def _encode_int32(self, value: int) -> None:
-        """int32编码方法 (整型 -> 4字节大端序)"""
-        self._buffer.extend(struct.pack('>i', value))
-
-    def _encode_int(self, value: int, length: int) -> None:
-        """通用整型编码方法 (整型 -> 定长大端序字节)"""
-        if value < 0:
-            raise ValueError("Negative integers not supported")
-        
-        if value.bit_length() > length * 8:
-            raise ValueError(f"Integer exceeds {length}-byte limit")
-        
-        self._buffer.extend(value.to_bytes(length, 'big'))
-
-    def _encode_str(self, value: str) -> None:
-        """字符串编码方法 (字符串 -> 长度前缀 + UTF-8字节)"""
-        encoded = value.encode('utf-8')
-        self._encode_int(len(encoded), 1)
-        self._buffer.extend(encoded)
-
-
-# Find响应编码器
-class FindEncoder(BaseEncoder):
-    def __init__(self, device_id: str, response: FindResponse):
-        super().__init__()
-        self._encode_id(device_id)
-        self._encode_timestamp(response.timestamp)
-        
-    def _encode_id(self, device_id: str) -> None:
-        """ID编码方法 (十六进制字符串 -> 字节流)"""
-        if len(device_id) != 8:  # 4字节对应8个十六进制字符
-            raise ValueError("Invalid ID length. Expected 8 hex chars")
-        
-        try:
-            self._buffer.extend(bytes.fromhex(device_id))
-        except ValueError:
-            raise ValueError("Invalid hexadecimal ID format")
-
-
-# HeartBeat响应编码器
-class HeartBeatEncoder(BaseEncoder):
-    def __init__(self, device_id: str, response: HeartBeatResponse):
-        super().__init__()
-        self._encode_id(device_id)
-        self._encode_timestamp(response.timestamp)
-        
-    def _encode_id(self, device_id: str) -> None:
-        """ID编码方法 (十六进制字符串 -> 字节流)"""
-        if len(device_id) != 8:  # 4字节对应8个十六进制字符
-            raise ValueError("Invalid ID length. Expected 8 hex chars")
-        
-        try:
-            self._buffer.extend(bytes.fromhex(device_id))
-        except ValueError:
-            raise ValueError("Invalid hexadecimal ID format")
-
-
-# Sensor响应编码器
-class SensorEncoder(BaseEncoder):
-    def __init__(self, device_id: str, response: SensorResponse):
-        super().__init__()
-        self._encode_id(device_id)
-        self._encode_timestamp(response.timestamp)
-        self._encode_int(response.uid, 4)
-        self._encode_str(response.name)
-        
-    def _encode_id(self, device_id: str) -> None:
-        """ID编码方法 (十六进制字符串 -> 字节流)"""
-        if len(device_id) != 8:  # 4字节对应8个十六进制字符
-            raise ValueError("Invalid ID length. Expected 8 hex chars")
-        
-        try:
-            self._buffer.extend(bytes.fromhex(device_id))
-        except ValueError:
-            raise ValueError("Invalid hexadecimal ID format")
-
-
-# Stop响应编码器
-class StopEncoder(BaseEncoder):
-    def __init__(self, device_id: str, response: StopResponse):
-        super().__init__()
-        self._encode_id(device_id)
-        self._encode_timestamp(response.timestamp)
-        
-    def _encode_id(self, device_id: str) -> None:
-        """ID编码方法 (十六进制字符串 -> 字节流)"""
-        if len(device_id) != 8:  # 4字节对应8个十六进制字符
-            raise ValueError("Invalid ID length. Expected 8 hex chars")
-        
-        try:
-            self._buffer.extend(bytes.fromhex(device_id))
-        except ValueError:
-            raise ValueError("Invalid hexadecimal ID format")
-
-
-# Float响应编码器
-class FloatEncoder(BaseEncoder):
-    def __init__(self, device_id: str, response: FloatResponse):
-        super().__init__()
-        self._encode_id(device_id)
-        self._encode_timestamp(response.timestamp)
-        self._encode_int(response.uid, 4)
-        self._encode_float32(response.value)
-        
-    def _encode_id(self, device_id: str) -> None:
-        """ID编码方法 (十六进制字符串 -> 字节流)"""
-        if len(device_id) != 8:  # 4字节对应8个十六进制字符
-            raise ValueError("Invalid ID length. Expected 8 hex chars")
-        
-        try:
-            self._buffer.extend(bytes.fromhex(device_id))
-        except ValueError:
-            raise ValueError("Invalid hexadecimal ID format")
-
-
-# String响应编码器
-class StringEncoder(BaseEncoder):
-    def __init__(self, device_id: str, response: StringResponse):
-        super().__init__()
-        self._encode_id(device_id)
-        self._encode_timestamp(response.timestamp)
-        self._encode_int(response.uid, 4)
-        self._encode_int32(response.chunck)
-        self._encode_str(response.value)
-        
-    def _encode_id(self, device_id: str) -> None:
-        """ID编码方法 (十六进制字符串 -> 字节流)"""
-        if len(device_id) != 8:  # 4字节对应8个十六进制字符
-            raise ValueError("Invalid ID length. Expected 8 hex chars")
-        
-        try:
-            self._buffer.extend(bytes.fromhex(device_id))
-        except ValueError:
-            raise ValueError("Invalid hexadecimal ID format")
-
-
-# Audio响应编码器
-class AudioEncoder(BaseEncoder):
-    def __init__(self, device_id: str, response: AudioResponse):
-        super().__init__()
-        self._encode_id(device_id)
-        self._encode_timestamp(response.timestamp)
-        self._encode_int(response.uid, 4)
-        self._encode_int32(response.chunck)
-        self._encode_bytes(response.value)
-        
-    def _encode_id(self, device_id: str) -> None:
-        """ID编码方法 (十六进制字符串 -> 字节流)"""
-        if len(device_id) != 8:  # 4字节对应8个十六进制字符
-            raise ValueError("Invalid ID length. Expected 8 hex chars")
-        
-        try:
-            self._buffer.extend(bytes.fromhex(device_id))
-        except ValueError:
-            raise ValueError("Invalid hexadecimal ID format")
-            
-    def _encode_bytes(self, value: bytes) -> None:
-        """字节流编码方法 (字节流 -> 长度前缀 + 字节流)"""
-        self._encode_int(len(value), 4)
-        self._buffer.extend(value)
-        
-
-
-        
-        
-    

@@ -5,7 +5,7 @@ from typing import Optional, Dict, Any, Tuple
 from concurrent.futures import ThreadPoolExecutor
 import redis
 
-from .configs import UdpConfigs
+from core.configs.configs import UdpConfigs
 from .protocol import RequestType, DefaultProtocolHeader
 from .cache import (
     StaticCache, StreamCache,
@@ -32,8 +32,6 @@ PORT_CACHE.register_range(*LISTEN_PORT_RANGE)
 class UdpDriver(asyncio.Protocol):
     """基于 asyncudp 的异步 UDP 驱动器，支持静态/流式数据缓存处理"""
     thread_name = "UdpDriver"
-
-
     def __init__(self,
                  ip: str = None,
                  port_range: PortPool = None,
@@ -138,14 +136,16 @@ class UdpDriver(asyncio.Protocol):
                                   data=decoded_data["data"],
                                   timestamp=decoded_data["timestamp"],
                                   addr=addr,
-                                  rout=decoded_data["rout"])
+                                  )
                 _logger.info("静态数据缓冲赋值成功")
                 self.static_cache.add(buffer=buffer)
 
             elif decode_type == "stream":
-                buffer = self.stream_cache.get_by_id(id=decoded_data["uid"])
-                buffer.datas.add_chunk(chunk=decoded_data["data"], 
-                                        chunk_id=decoded_data["chunk"])
+                buffer: StreamBufferStruct
+                buffer = self.stream_cache.get_by_id(id=decoded_data["uid"]).datas
+                buffer.done = decoded_data["done"]
+                buffer.add_chunk(chunk=decoded_data["data"], 
+                                chunk_id=decoded_data["chunk"])
                 _logger.info("流数据缓冲赋值成功")
 
             elif decode_type == "init":
@@ -155,8 +155,6 @@ class UdpDriver(asyncio.Protocol):
                         name = decoded_data["name"],
                         timestamp = decoded_data["timestamp"],
                         addr = addr,
-                        rout = decoded_data["rout"] + "/chunck",
-
                     )
                 if decoded_data["type"] == "flt":
                     
@@ -166,7 +164,6 @@ class UdpDriver(asyncio.Protocol):
                                        timestamp=decoded_data["timestamp"],
                                        stream_length=decoded_data["stream_len"],
                                        addr=addr,
-                                       rout=decoded_data["rout"],
                                        datas=data_struct)
                     
 
@@ -184,7 +181,6 @@ class UdpDriver(asyncio.Protocol):
                                          bit_depth=decoded_data["bit_depth"],
                                          channels=decoded_data["channels"],
                                          addr=addr,
-                                         rout=decoded_data["rout"],
                                          datas=data_struct)
                     self.stream_cache.init_stream(buffer=buffer)
                     _logger.info("aud数据缓冲赋值成功")
@@ -198,7 +194,6 @@ class UdpDriver(asyncio.Protocol):
                                        formats=decoded_data["format"],
                                        size=decoded_data["size"],
                                        addr=addr,
-                                       rout=decoded_data["rout"],
                                        datas=data_struct)
                     self.stream_cache.init_stream(buffer=buffer)
                     _logger.info("img数据缓冲赋值成功")

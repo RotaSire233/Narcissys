@@ -34,7 +34,9 @@ async def del_component(component: Dict):
     
 @router.post("/components/ladder/compile")
 async def compile_ladder(infos: Dict):
+    _logger.info(f"Compiling ladder gets: {infos}")
     compiled = compiler(ladder_group, infos)
+    _logger.info(f"Compile Result: {compiled}")
     if compiled["success"]:
         data_process = process(compiler)
         if data_process:
@@ -42,7 +44,6 @@ async def compile_ladder(infos: Dict):
     else:
         return {"success": False, "error": "error(Error Engine Will Be Added In Future)"}
 
-    
 
 @router.get("/components/ladder/sensor/get")
 async def get_sensor():

@@ -15,6 +15,8 @@ from typing_extensions import TypedDict
 ------------------------------------------------------------------------
 # numpy < 2.0.0 2.0.0以上版本兼容老模型一堆问题在这个onnx兼容问题官方解决之前
 暂时维持在numpy2.0.0版本以下，如果onnx模型更新，请自行更新numpy版本
+# onnx api 先搁置，我准备是做前处理和后处理插件的接口方法 
+# 预计添加功能 前处理脚本api接口，后处理脚本api接口
 ------------------------------------------------------------------------
 """
 @dataclass
@@ -27,7 +29,7 @@ class InitStruct(TypedDict):
 
 class OnnxCageHandler:
     def __init__(self):
-        with open(os.path.join(os.path.dirname(__file__), "keys/onnx_model.json"), "r") as self.f:
+        with open(os.path.join(os.path.dirname(__file__), "onnx_model.json"), "r") as self.f:
             self.keys_json: Dict = json.load(self.f)
         self.model_list = self.keys_json
     
@@ -43,8 +45,6 @@ class OnnxCageHandler:
         datas = json.dumps(self.keys_json)
         self.f.write(datas)
 
-model_cage = OnnxCageHandler()
-
 @dataclass
 class RequestStruct:
     """请求结构"""
@@ -57,6 +57,7 @@ class RequestStruct:
         self.input_data = input_data
         self.request_id = request_id
         self.timestamp = time.time()
+
 @dataclass
 class ResponseStruct:
     """响应结构"""
@@ -286,3 +287,5 @@ class OnnxApi:
         """关闭服务"""
         self.executor.shutdown()
         _logger.info("ONNX Server Shutdown")
+
+model_cage = OnnxCageHandler()

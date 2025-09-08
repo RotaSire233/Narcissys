@@ -25,7 +25,13 @@ export const ELEMENT_TYPES = {
     canConnectLeft: true,
     canConnectRight: false
   },
-  // 添加新的连接元件类型
+  MODEL: {
+    id: 'model',
+    icon: '-□-',
+    name: '模型',
+    canConnectLeft: true,
+    canConnectRight: true
+  },
   CONNECT_UP: { 
     id: 'connect_up', 
     icon: '↑', 

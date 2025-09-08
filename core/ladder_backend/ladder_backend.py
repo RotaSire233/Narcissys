@@ -1,6 +1,9 @@
 from loguru import logger as _logger
 from dataclasses import dataclass
 from typing import Dict, Tuple, List
+from core.model_api.llm_api import ApiConfig, ClientBase, ClientGroup
+
+client_group = ClientGroup()
 
 # 元件类型
 @dataclass(frozen=True)
@@ -8,9 +11,15 @@ class LadderComponents:
     NORMAL_OPEN = 'normal_open'
     NORMAL_CLOSED = 'normal_closed'
     COIL = 'coil'
+    MODEL = 'model'
     CONNECT_UP = 'connect_up'
     CONNECT_DOWN = 'connect_down'
     CONNECT_RIGHT = 'connect_right'
+
+@dataclass
+class ModelType:
+    common= "common"
+    llm = "llm"
 
 
 # 元件信息类
@@ -33,9 +42,18 @@ class ElementClass:
             self.device = []
         elif dtype == LadderComponents.CONNECT_UP or dtype == LadderComponents.CONNECT_DOWN:
             self.target = None
+        elif dtype == LadderComponents.MODEL:
+            self.client: ClientBase = None
+            self.sensor = []
+            self.model_mode = None
+            self.model_name = None
+            self.model_params = None
+            self.stream = False
+            self.task_id = []
             
         self.prev: List['ElementClass'] = []
         self.next: List['ElementClass'] = []
+        self.cur_data = []
 
 
 
@@ -221,9 +239,11 @@ class LadderCommand:
 
 class LadderGroup:
     def __init__(self):
-        self.group : Dict[int, ElementClass] = {}
+        self.group : Dict[int, LadderCommand] = {}
     
-    def add_ladder(self, rung: int,ladder: ElementClass):
+    def add_ladder(self, 
+                   rung: int,
+                   ladder: LadderCommand):
         if rung in self.group: return
         self.group[rung] = ladder
     
@@ -232,6 +252,7 @@ class LadderGroup:
             self.group[rung] = LadderCommand()
         return self.group.get(rung)
     
+    @property
     def get_compile_queue(self):
         compile_queue = []
         for rung in sorted(self.group.keys()):

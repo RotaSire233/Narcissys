@@ -38,13 +38,19 @@ class MqttPublisher:
         
         message = payload.copy()
         if 'data' in message:
-            payload.pop('data')
+            message.pop('data')
         try:
-            message = json.dumps(message)
-            self.client.publish(message["rout"], payload=message)
+            rout = message.get("rout")
+            if not rout:
+                logger.error("[MQTT-BLOCK][ERROR] MQTT 模块 发送数据失败: 'rout' 字段缺失")
+                return
+                
+            message_str = json.dumps(message)
+            self.client.publish(rout, payload=message_str)
             logger.debug("[MQTT-BLOCK][SUCESS] MQTT 模块 发送数据成功")
 
         except Exception as e:
             logger.error("[MQTT-BLOCK][ERROR] MQTT 模块 发送数据失败: %s" % e)
+        
         
     

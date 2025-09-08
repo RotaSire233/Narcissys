@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import os
 import signal
+
+
 from .network.mqtt.mqtt_broker import start_mosquitto
 from .network.udp.udp_driver import UdpDriver, UdpManager
 from .network.udp.expose_client import udp_expose_client
@@ -193,4 +195,7 @@ async def get_udp_driver(driver_id: str):
         raise HTTPException(status_code=500, detail=f"获取驱动器信息失败: {str(e)}")
     
 def _start_compenents():
-    from .api_service import data_service, ladder_service, mqtt_server, model_api
+    from .api_service import (model_service,
+                              ladder_service,
+                              mqtt_server,
+                              )

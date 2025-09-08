@@ -3,17 +3,22 @@ from dataclasses import dataclass
 from enum import Enum
 from loguru import logger as _logger
 
-__all__ = ['UdpConfigs']
-# 配置日志记录
+
+class GlobalCacheConfig:
+    """ 全局缓存 配置类 """                
+    CACHE_LEN_SIZE: Final[int] = 32                # 默认全局缓存长度
+    CACHE_RAM_SIZE: Final[int] = 64 * 1024 * 1024  # 默认全局缓存大小
+    OVERFLOW_THRESHOLD: Final[int] = 1.5              # 缓存溢出阈值
+    WARNING_THRESHOLD: Final[int] = 1.2               # 缓存警告阈值
 
 
 class UdpConfigs:
     """ UDP 配置类 """
-    LISTEN_IP: Final[str] = '0.0.0.0'                     # 监听广播
+    LISTEN_IP: Final[str] = '0.0.0.0'                        # 监听广播
     LISTEN_PORT_RANGE: Final[tuple[int, int]] = (1025, 1225) # UDP端口范围
-    BUFFER_SIZE: Final[int] = 1024                        # socket缓冲区大小
-    MAX_WORKERS: Final[int] = 10                          # 并行数据处理线程上限
-    QUEUE_SIZE: Final[int] = 100                          # 数据队列大小
+    BUFFER_SIZE: Final[int] = 1024                           # socket缓冲区大小
+    MAX_WORKERS: Final[int] = 10                             # 并行数据处理线程上限
+    QUEUE_SIZE: Final[int] = 100                             # 数据队列大小
 
     DEFAULT_STATIC_CACHE_LEN_SIZE: Final[int] = 50                # 默认静态缓存长度
     DEFAULT_STATIC_CACHE_RAM_SIZE: Final[int] = 4 * 1024 * 1024   # 默认静态缓存大小
@@ -33,8 +38,3 @@ class UdpConfigs:
     def validate_port(cls, port: int) -> bool:
         """验证端口是否在有效范围内"""
         return cls.LISTEN_PORT_RANGE[0] <= port <= cls.LISTEN_PORT_RANGE[1]
-
-
-
-
-

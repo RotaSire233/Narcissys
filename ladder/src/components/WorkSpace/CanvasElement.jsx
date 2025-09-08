@@ -30,6 +30,15 @@ const CoilSvg = () => (
   </g>
 );
 
+// Model组件 - 使用用户提供的model.svg文件
+const ModelSvg = () => (
+  <g>
+    <line stroke="#000000" x2="-0.47359" y2="49" y1="49" x1="19.67213" stroke-width="3" fill="none"/>
+    <line stroke="#000000" x2="80.18214" y2="49" y1="49" x1="100.32786" stroke-width="3" fill="none"/>
+    <rect height="80" width="60" y="10" x="20" stroke-width="3" stroke="#000000" fill="none"/>
+  </g>
+);
+
 // 向上连接元件SVG - 使用用户提供的up.svg文件
 const ConnectUpSvg = () => (
   <g>
@@ -174,6 +183,15 @@ export default function CanvasElement({ element, rungIndex, elementIndex }) {
             <CoilSvg />
           </g>
         );
+
+      case 'model':
+        // Model组件 - 使用用户提供的SVG文件
+        return (
+          <g transform="scale(0.3) translate(-50, -50)">
+            <ModelSvg />
+          </g>
+        );
+        
       case 'connect_up':
         // 向上连接元件 - 使用用户提供的SVG文件
         return (
@@ -195,6 +213,7 @@ export default function CanvasElement({ element, rungIndex, elementIndex }) {
             <ConnectRightSvg />
           </g>
         );
+      
       default:
         console.log('Unknown element type:', element.type);
         return (

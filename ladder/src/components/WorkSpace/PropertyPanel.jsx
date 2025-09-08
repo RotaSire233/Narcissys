@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useCanvas } from './CanvasContext';
-import { MqttApi } from '../../services/api';
+import { MqttApi, LLMApi } from '../../services/api';
 import './workspace.css';
 
 export default function PropertyPanel() {
@@ -14,14 +14,27 @@ export default function PropertyPanel() {
   const [deviceSensorData, setDeviceSensorData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  // 添加模型模式状态
+  const [modelMode, setModelMode] = useState('llm');
+  // 添加模型列表状态
+  const [modelList, setModelList] = useState([]);
+  const [modelListLoading, setModelListLoading] = useState(false);
+  // 添加模型名称状态
+  const [selectedModelName, setSelectedModelName] = useState('');
+  // 添加流式传输状态
+  const [streamValue, setStreamValue] = useState('false');
+  // 添加参数选取状态
+  const [modelParams, setModelParams] = useState('');
   
   // 获取设备和传感器数据
   const fetchDeviceSensorData = async (forceRefresh = false) => {
     // 检查是否为触点或线圈元件
     const isContactElement = selectedElement && (selectedElement.type.id === 'normal_open' || selectedElement.type.id === 'normal_closed');
     const isCoilElement = selectedElement && selectedElement.type.id === 'coil';
+    // 检查是否为模型元件
+    const isModelElement = selectedElement && selectedElement.type.id === 'model';
     
-    if (!selectedElement || (!isContactElement && !isCoilElement)) {
+    if (!selectedElement || (!isContactElement && !isCoilElement && !isModelElement)) {
       return;
     }
     
@@ -44,7 +57,7 @@ export default function PropertyPanel() {
           });
         } 
         // 对于触点元件，添加设备ID和传感器
-        else if (isContactElement) {
+        else if (isContactElement || isModelElement) {
           // 按设备分组添加选项，参考ResizablePanels组件中的处理方式
           Object.entries(data.devices).forEach(([deviceId, deviceInfo]) => {
             // 添加设备ID作为选项
@@ -83,23 +96,73 @@ export default function PropertyPanel() {
     }
   };
   
-  // 获取设备和传感器数据
-  useEffect(() => {
-    fetchDeviceSensorData();
-  }, [selectedElement]);
+  // 获取模型列表数据
+  const fetchModelList = async () => {
+    const isModelElement = selectedElement && selectedElement.type.id === 'model';
+    const isLLMMode = modelMode === 'llm';
+    
+    if (!isModelElement || !isLLMMode) {
+      return;
+    }
+    
+    setModelListLoading(true);
+    try {
+      const data = await LLMApi.getList();
+      const formattedModels = [];
+      
+      if (data) {
+        // 解析模型数据，将其格式化为选项列表
+        Object.entries(data).forEach(([apiName, apiInfo]) => {
+          // 添加API名称作为选项
+          formattedModels.push({
+            value: apiName,
+            label: apiName
+          });
+        });
+      }
+      
+      setModelList(formattedModels);
+    } catch (err) {
+      console.error('获取模型列表失败:', err);
+      setError(err.message);
+    } finally {
+      setModelListLoading(false);
+    }
+  };
   
+  // 获取设备和传感器数据
   useEffect(() => {
     if (selectedElement) {
       setComment(selectedElement.comments || '');
       setName(selectedElement.name || '');
       // 初始化选项值
       setSelectedOption(selectedElement.properties.option || '');
+      // 初始化模型模式
+      setModelMode(selectedElement.properties.modelMode || 'llm');
+      // 初始化模型名称
+      setSelectedModelName(selectedElement.properties.modelName || '');
+      // 初始化流式传输值
+      setStreamValue(selectedElement.properties.stream || 'false');
+      // 初始化模型参数
+      setModelParams(selectedElement.properties.modelParams || '');
     } else {
       setComment('');
       setName('');
       setSelectedOption('');
+      setModelMode('llm');
+      setSelectedModelName('');
+      setStreamValue('false');
+      setModelParams('');
     }
   }, [selectedElement]);
+  
+  // 当选中模型元件且为LLM模式时获取模型列表
+  useEffect(() => {
+    const isModelElement = selectedElement && selectedElement.type.id === 'model';
+    if (isModelElement && modelMode === 'llm') {
+      fetchModelList();
+    }
+  }, [selectedElement, modelMode]);
   
   const handleSaveComment = () => {
     if (selectedElement) {
@@ -113,6 +176,19 @@ export default function PropertyPanel() {
       if (selectedOption) {
         updateElementProperties(selectedElement.id, {
           option: selectedOption
+        });
+      }
+      
+      // 更新模型模式和其他模型属性
+      if (selectedElement.type.id === 'model') {
+        // 构建模型的option字符串，包含所有模型相关信息
+        const modelOption = `${modelMode}|${selectedModelName}|${streamValue}|${modelParams}`;
+        updateElementProperties(selectedElement.id, {
+          modelMode: modelMode,
+          modelName: selectedModelName,
+          stream: streamValue,
+          modelParams: modelParams,
+          option: modelOption  // 将所有模型信息组合成option字段
         });
       }
     }
@@ -132,6 +208,30 @@ export default function PropertyPanel() {
     if (selectedElement) {
       updateElementProperties(selectedElement.id, {
         option: value
+      });
+    }
+  };
+  
+  // 处理模型名称更改
+  const handleModelNameChange = (e) => {
+    const value = e.target.value;
+    setSelectedModelName(value);
+    // 更新元素属性
+    if (selectedElement) {
+      updateElementProperties(selectedElement.id, {
+        modelName: value
+      });
+    }
+  };
+  
+  // 处理流式传输更改
+  const handleStreamChange = (e) => {
+    const value = e.target.value;
+    setStreamValue(value);
+    // 更新元素属性
+    if (selectedElement) {
+      updateElementProperties(selectedElement.id, {
+        stream: value
       });
     }
   };
@@ -157,6 +257,8 @@ export default function PropertyPanel() {
   const isCoilElement = selectedElement.type.id === 'coil';
   // 检查是否为连接元件
   const isConnectionElement = selectedElement.type.id === 'connect_up' || selectedElement.type.id === 'connect_down' || selectedElement.type.id === 'connect_right';
+  // 检查是否为模型元件
+  const isModelElement = selectedElement.type.id === 'model';
   
   return (
     <div className="property-panel">
@@ -171,6 +273,138 @@ export default function PropertyPanel() {
           placeholder="输入元件名称..."
         />
       </div>
+      
+      {isModelElement ? (
+        <div className="panel-section">
+          <label>模型属性</label>
+          <div className="model-properties-placeholder">
+            {/* 模型组件的专用属性区域 */}
+            <div className="model-mode-selector">
+              <select 
+                value={modelMode} 
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setModelMode(value);
+                  // 更新元素属性
+                  if (selectedElement) {
+                    updateElementProperties(selectedElement.id, {
+                      modelMode: value
+                    });
+                  }
+                }}
+              >
+                <option value="llm">大模型API模式</option>
+                <option value="common">通用API模式</option>
+              </select>
+            </div>
+            <div className="model-mode-content">
+
+              {modelMode === 'llm' ? (
+                <div className="llm-mode-properties">
+                  <div className="panel-section">
+                    <label>模型平台</label>
+                    {modelListLoading ? (
+                      <div>加载模型列表中...</div>
+                    ) : modelList.length > 0 ? (
+                      <select
+                        value={selectedModelName}
+                        onChange={handleModelNameChange}
+                      >
+                        <option value="">请选择平台</option>
+                        {modelList.map((model, index) => (
+                          <option key={index} value={model.value}>
+                            {model.label}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type="text"
+                        value={selectedModelName}
+                        onChange={handleModelNameChange}
+                        placeholder="输入模型名称..."
+                      />
+                    )}
+                  </div>
+                  {selectedModelName && (
+                <>
+                  <div className="panel-section">
+                    <label>模型选择</label>
+                    <input
+                      type="text"
+                      placeholder="请输入模型名称..."
+                    />
+                  </div>
+                  <div className="panel-section">
+                    <label>参数选取</label>
+                    <div className="param-selector">
+                      <input
+                        type="text"
+                        value={modelParams}
+                        onChange={(e) => setModelParams(e.target.value)}
+                        placeholder="输入参数，多个参数用分号分隔..."
+                        style={{ width: '100%', marginBottom: '5px' }}
+                      />
+                      {loading ? (
+                        <div>加载中...</div>
+                      ) : error ? (
+                        <div className="error">加载失败: {error}</div>
+                      ) : deviceSensorData.length > 0 ? (
+                        <select 
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              const newValue = modelParams 
+                                ? `${modelParams};${e.target.value}`
+                                : e.target.value;
+                              setModelParams(newValue);
+                            }
+                          }}
+                          value=""
+                        >
+                          <option value="">选择参数添加到列表</option>
+                          {deviceSensorData.map((item, index) => (
+                            <option 
+                              key={index} 
+                              value={item.value}
+                              style={item.isDevice ? { fontWeight: 'bold' } : {}}
+                            >
+                              {item.label}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <div>暂无设备数据</div>
+                      )}
+                      <button 
+                        onClick={handleRefresh} 
+                        style={{ marginTop: '5px' }}
+                      >
+                        刷新
+                      </button>
+                    </div>
+                  </div>
+                      <div className="panel-section">
+                        <label>流式传输</label>
+                        <select
+                          value={streamValue}
+                          onChange={handleStreamChange}
+                        >
+                          <option value="true">True</option>
+                          <option value="false">False</option>
+                        </select>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <div className="common-mode-properties">
+                  <p>通用 API 模式配置区域</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
       
       {(isContactElement || isCoilElement) ? (
         <div className="panel-section">
@@ -204,7 +438,7 @@ export default function PropertyPanel() {
         </div>
       ) : null}
       
-      {!isConnectionElement && (
+      {!isConnectionElement && !isModelElement && (
         <div className="panel-section">
           <label>描述</label>
           <textarea 

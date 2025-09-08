@@ -123,6 +123,26 @@ const ResizablePanels = () => {
     fetchMqttClients();
   }, []);
 
+  // 处理API密钥更改
+  const handleApiKeyChange = (modelName, value) => {
+    setApiKeys(prev => ({
+      ...prev,
+      [modelName]: value
+    }));
+  };
+
+  // 保存API密钥更改
+  const saveApiKeyChange = async (modelName, value) => {
+    try {
+      await LLMApi.modifyList(modelName, value);
+      // 可以添加一个提示，表示保存成功
+    } catch (err) {
+      console.error('保存API密钥失败:', err);
+      // 恢复原来的值
+      fetchApiKeys();
+    }
+  };
+
   // 渲染API密钥表格行
   const renderApiKeysRows = () => {
     if (apiLoading) {
@@ -156,7 +176,8 @@ const ResizablePanels = () => {
           <input 
             type="text" 
             value={value} 
-            readOnly
+            onChange={(e) => handleApiKeyChange(key, e.target.value)}
+            onBlur={(e) => saveApiKeyChange(key, e.target.value)}
             style={{ width: '100%', boxSizing: 'border-box' }}
           />
         </td>

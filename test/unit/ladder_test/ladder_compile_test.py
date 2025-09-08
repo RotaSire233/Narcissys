@@ -166,6 +166,11 @@ def test_info_compile():
     logger.info("开始测试_info_compile方法")
     compiler = LadderCompile()
     
+    # 初始化必要的属性
+    compiler.registed_components = {}
+    compiler.input_device = set()
+    compiler.output_device = []
+    
     # 创建梯形图指令
     ladder_command = LadderCommand()
     
@@ -212,7 +217,6 @@ def test_info_compile():
     
     assert result is None or (isinstance(result, tuple) and len(result) == 2)
     logger.info("_info_compile方法测试完成")
-
 def test_ladder_compile_call():
     """测试LadderCompile的__call__方法"""
     logger.info("开始测试LadderCompile的__call__方法")
@@ -257,6 +261,10 @@ def test_ladder_compile_call():
         ]
     }
     
+    # 保存原始元件的引用用于比较
+    original_comp1 = comp1
+    original_coil1 = coil1
+    
     # 测试编译
     logger.debug("执行完整编译流程")
     result = compiler(ladder_group, connect_info)
@@ -268,13 +276,26 @@ def test_ladder_compile_call():
         assert result.get("success", False) == True
         logger.debug("编译成功")
     
-    # 检查链表和属性
-    assert comp1.next[0] == coil1
-    assert coil1.prev[0] == comp1
-    assert "sensor_option" in comp1.sensor
-    assert "device_option" in coil1.device
-    logger.debug(f"完整链表结构检查: {comp1.id} -> {coil1.id}")
-    logger.debug(f"属性设置检查: comp1.sensor={comp1.sensor}, coil1.device={coil1.device}")
+    # 由于使用了深拷贝，原始元件不会被修改，需要从编译结果中获取元件
+    compiled_group = result.get("compiled_group")
+    compiled_ladder_command = compiled_group.group[0]
+    compiled_comp1 = compiled_ladder_command.components_dict["comp1"]
+    compiled_coil1 = compiled_ladder_command.components_dict["coil1"]
+    
+    # 检查链表和属性（应该在编译后的副本中检查）
+    assert compiled_comp1.next[0] == compiled_coil1
+    assert compiled_coil1.prev[0] == compiled_comp1
+    assert "sensor_option" in compiled_comp1.sensor
+    assert "device_option" in compiled_coil1.device
+    logger.debug(f"完整链表结构检查: {compiled_comp1.id} -> {compiled_coil1.id}")
+    logger.debug(f"属性设置检查: compiled_comp1.sensor={compiled_comp1.sensor}, compiled_coil1.device={compiled_coil1.device}")
+    
+    # 确保原始元件没有被修改（深拷贝的效果）
+    assert len(original_comp1.next) == 0
+    assert len(original_coil1.prev) == 0
+    assert not hasattr(original_comp1, 'sensor') or "sensor_option" not in original_comp1.sensor
+    assert not hasattr(original_coil1, 'device') or "device_option" not in original_coil1.device
+    logger.debug("确认原始元件未被修改，验证了深拷贝功能")
     
     assert result is None or isinstance(result, dict)
     logger.info("LadderCompile的__call__方法测试完成")

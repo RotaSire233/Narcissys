@@ -1,6 +1,8 @@
 import paho.mqtt.client as paho
 from paho.mqtt.enums import CallbackAPIVersion
-from loguru import logger
+import asyncio
+from loguru import logger as _logger
+from typing import Callable, Optional
 import time
 import json
 import uuid
@@ -23,15 +25,15 @@ class VirtualMqttClient:
         )
 
         if mqtt_config.get("username") and mqtt_config.get("password"):
-            logger.debug("[VIRTUAL-MQTT][INFO] 使用用户名密码进行认证")
+            _logger.debug("[VIRTUAL-MQTT][INFO] 使用用户名密码进行认证")
             self.client.username_pw_set(mqtt_config["username"], mqtt_config["password"])
 
         try:
             self.client.connect(mqtt_config["endpoint"], port=port)
             self.client.loop_start()
-            logger.debug("[VIRTUAL-MQTT][SUCCESS] 虚拟MQTT客户端连接成功")
+            _logger.debug("[VIRTUAL-MQTT][SUCCESS] 虚拟MQTT客户端连接成功")
         except Exception as e:
-            logger.error(f"[VIRTUAL-MQTT][ERROR] 虚拟MQTT客户端连接失败: {e}")
+            _logger.error(f"[VIRTUAL-MQTT][ERROR] 虚拟MQTT客户端连接失败: {e}")
 
     def publish_registration(self, device_id: str = None, device_info: dict = None):
         """
@@ -44,10 +46,8 @@ class VirtualMqttClient:
             device_id = f"device_{uuid.uuid4().hex[:8]}"
             
         if device_info is None:
-            device_info = {
-                "ip": "192.168.1.100",
-                "sensor": [{"virtual_sensor":{}},{"virtual_sensor_1":{}}],
-            }
+            _logger.warning("[VIRTUAL-MQTT][WARNING] 未提供设备信息")
+            return None
             
         registration_msg = {
             "device_id": device_id,
@@ -56,10 +56,10 @@ class VirtualMqttClient:
         
         try:
             self.client.publish("syst/regist", json.dumps(registration_msg), qos=1)
-            logger.info(f"[VIRTUAL-MQTT][REGISTER] 发布注册消息: {registration_msg}")
+            _logger.info(f"[VIRTUAL-MQTT][REGISTER] 发布注册消息: {registration_msg}")
             return device_id
         except Exception as e:
-            logger.error(f"[VIRTUAL-MQTT][ERROR] 发布注册消息失败: {e}")
+            _logger.error(f"[VIRTUAL-MQTT][ERROR] 发布注册消息失败: {e}")
             return None
 
     def publish_unregistration(self, device_id: str):
@@ -74,9 +74,9 @@ class VirtualMqttClient:
         
         try:
             self.client.publish("syst/unregist", json.dumps(unregistration_msg), qos=1)
-            logger.info(f"[VIRTUAL-MQTT][UNREGISTER] 发布注销消息: {unregistration_msg}")
+            _logger.info(f"[VIRTUAL-MQTT][UNREGISTER] 发布注销消息: {unregistration_msg}")
         except Exception as e:
-            logger.error(f"[VIRTUAL-MQTT][ERROR] 发布注销消息失败: {e}")
+            _logger.error(f"[VIRTUAL-MQTT][ERROR] 发布注销消息失败: {e}")
 
     def publish_custom_message(self, topic: str, payload: dict, qos: int = 1):
         """
@@ -88,9 +88,29 @@ class VirtualMqttClient:
         """
         try:
             self.client.publish(topic, json.dumps(payload), qos=qos)
-            logger.info(f"[VIRTUAL-MQTT][PUBLISH] 发布消息到 {topic}: {payload}")
+            _logger.info(f"[VIRTUAL-MQTT][PUBLISH] 发布消息到 {topic}: {payload}")
         except Exception as e:
-            logger.error(f"[VIRTUAL-MQTT][ERROR] 发布消息失败: {e}")
+            _logger.error(f"[VIRTUAL-MQTT][ERROR] 发布消息失败: {e}")
+
+    def subscribe(self, topic: str, qos: int = 1, callback: Optional[Callable] = None) -> bool:
+        """
+        订阅指定主题
+        
+        :param topic: 要订阅的主题
+        :param qos: 服务质量等级
+        :param callback: 消息回调函数，格式为 callback(client, userdata, message)
+        :return: 订阅是否成功
+        """
+        try:
+            if callback:
+                self.client.on_message = callback
+            
+            result, mid = self.client.subscribe(topic, qos=qos)
+            _logger.info(f"[VIRTUAL-MQTT][SUBSCRIBE] 订阅主题 {topic}")
+            return result == paho.MQTT_ERR_SUCCESS
+        except Exception as e:
+            _logger.error(f"[VIRTUAL-MQTT][ERROR] 订阅主题失败: {e}")
+            return False
 
     def disconnect(self):
         """
@@ -98,64 +118,4 @@ class VirtualMqttClient:
         """
         self.client.loop_stop()
         self.client.disconnect()
-        logger.debug("[VIRTUAL-MQTT][INFO] 虚拟MQTT客户端已断开连接")
-
-
-
-def test_virtual_client():
-    """
-    测试虚拟客户端的注册和注销功能
-    """
-    # MQTT配置
-    mqtt_config = {
-        "endpoint": "10.180.56.184",  # 根据实际情况修改
-        "client_id": "test_virtual_client"
-    }
-    
-    # 创建并连接虚拟客户端
-    virtual_client = VirtualMqttClient(mqtt_config)
-    
-    # 等待一段时间确保连接建立
-    time.sleep(2)
-    
-    # 测试设备注册
-    logger.info("[VIRTUAL-MQTT][TEST] 开始测试设备注册")
-    device_id = virtual_client.publish_registration()
-    
-    """# 等待消息被处理
-    logger.info(f"[VIRTUAL-MQTT][TEST] 设备 {device_id} 已注册，等待5秒后尝试注销")
-    time.sleep(5)
-    
-    # 测试设备注销
-    if device_id:
-        logger.info("[VIRTUAL-MQTT][TEST] 开始测试设备注销")
-        virtual_client.publish_unregistration(device_id)
-        logger.info("[VIRTUAL-MQTT][TEST] 设备注销消息已发送")
-    
-    # 等待消息被处理
-    time.sleep(2)
-    
-    # 测试自定义消息
-    logger.info("[VIRTUAL-MQTT][TEST] 开始测试自定义消息")
-    virtual_client.publish_custom_message(
-        "test/topic", 
-        {"message": "Hello from virtual client", "timestamp": time.time()}
-    )
-    
-    # 等待消息被处理
-    time.sleep(1)
-    
-    # 断开连接
-    virtual_client.disconnect()
-    """
-
-
-
-if __name__ == "__main__":
-    test_virtual_client()
-    # 保持程序运行以便观察日志
-    try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        logger.info("[VIRTUAL-MQTT][INFO] 测试程序已退出")
+        _logger.debug("[VIRTUAL-MQTT][INFO] 虚拟MQTT客户端已断开连接")

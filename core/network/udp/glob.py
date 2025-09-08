@@ -2,8 +2,6 @@ import threading
 from typing import Optional, Set, Dict, Tuple, List
 import heapq
 from loguru import logger as _logger
-
-
 import threading
 from typing import Optional, Set
 
@@ -110,31 +108,3 @@ class PortPool(GlobalCache):
             self._init_data()
         _logger.debug(f"重置端口池")
 
-class UidGenerator(GlobalCache):
-    def _init_data(self):
-        """初始化 UID 生成器的数据结构"""
-        self._uid_counter = 0 
-        self._uid_map: Dict[Tuple[int, str], int] = {}  # (id, name) -> uid 的映射表
-
-    def get_uid(self, id: int, name: str) -> int:
-        """获取与 (id, name) 对应的唯一 UID"""
-        key = (id, name)
-        if key in self._uid_map:
-            return self._uid_map[key]
-        
-        self._uid_counter += 1
-        uid = self._uid_counter
-        self._uid_map[key] = uid
-        _logger.info(f"UID: {uid} 输出成功")
-        return uid
-
-    def get_name(self, uid: int):
-        name = self._uid_map.get((uid, None))
-        if name is not None:
-            return name
-
-    def reset(self):
-        """重置 UID 生成器，用于测试或重新初始化"""
-        with self._instance_lock:
-            self._init_data()
-        _logger.info("UID 重置成功")
