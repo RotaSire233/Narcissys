@@ -1,11 +1,9 @@
-// src/components/WorkSpace/WorkCanvas.jsx
 import React, { useRef } from 'react';
-import { useCanvas, RUNG_HEIGHT } from './CanvasContext';
-import CanvasElement from './CanvasElement';
-import Rung from './Rung';
-import './workspace.css';
+import { useCanvas, RUNG_HEIGHT } from './CanvasCommon';
+import Rung from './rung';
+import './work_canvas.css';
 
-export default function WorkCanvas() {
+export default function WorkCanvas({style}) {
   const { 
     rungs, 
     addElement, 
@@ -108,7 +106,7 @@ export default function WorkCanvas() {
 
   return (
     <div 
-      className="work-canvas-container"
+      className="work-canvas-container" style={style}
       onDrop={handleDrop}
       onDragOver={handleDragOver}
     >

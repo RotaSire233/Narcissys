@@ -1,9 +1,11 @@
 import socket
-from typing import Tuple
+from typing import Tuple, Any
 from loguru import logger as _logger
 import json
 import asyncio
 from dataclasses import dataclass
+from encoder import StaticEncoder
+import threading
 
 
 
@@ -15,7 +17,7 @@ class UdpTypeStatic:
 
 @dataclass(frozen=True)
 class UdpTypeStream:
-    STR = "string"
+    STR = "string/stream"
     IMG = "image"
     AUD = "audio"
 
@@ -56,7 +58,7 @@ class UdpClientDriver:
         self.broadcast_port: int = 1226
         self._send_sock: socket.socket = None
         self._periodic_tasks = {}
-        self._stream_tasks = {}
+        self._task_buffers = {}
     # 监听广播获取暴露的地址
     def listen_for_broadcast(self, buffer_size=1024):
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -126,7 +128,7 @@ class UdpClientDriver:
             self._send_sock = None
             _logger.info("发送UDP socket已关闭")
             
-    def start_periodic_send(self, task_id: str, data: bytes, addr: Tuple[str, int], interval: float):
+    def start_periodic_send(self, task_id: str, data: StaticEncoder, addr: Tuple[str, int], interval: float):
         """
         启动定期发送任务
         
@@ -139,19 +141,40 @@ class UdpClientDriver:
         if task_id in self._periodic_tasks:
             _logger.warning(f"定期发送任务 {task_id} 已存在")
             return
+
             
         async def _periodic_send_task():
             while True:
                 try:
-                    await self.send_async(data, addr)
+                    await self.send_async(data(), addr)
                     await asyncio.sleep(interval)
                 except asyncio.CancelledError:
                     _logger.info(f"定期发送任务 {task_id} 已取消")
                     break
                 except Exception as e:
+                    import traceback
                     _logger.error(f"定期发送任务 {task_id} 出错: {e}")
+                    _logger.error(f"详细错误信息:\n{traceback.format_exc()}")
+                    
         
-        self._periodic_tasks[task_id] = asyncio.create_task(_periodic_send_task())
+        try:
+            loop = asyncio.get_running_loop()
+            self._periodic_tasks[task_id] = asyncio.create_task(_periodic_send_task())
+
+        except RuntimeError:
+            def run_in_new_loop():
+                new_loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(new_loop)
+                task = new_loop.create_task(_periodic_send_task())
+                self._periodic_tasks[task_id] = task
+                new_loop.run_forever()
+            
+
+            thread = threading.Thread(target=run_in_new_loop, daemon=True)
+            thread.start()
+            _logger.info(f"为任务 {task_id} 创建了新的事件循环线程")
+            return
+            
         _logger.info(f"已启动定期发送任务 {task_id}，间隔 {interval} 秒")
         
     def stop_periodic_send(self, task_id: str):
@@ -168,74 +191,6 @@ class UdpClientDriver:
         for task_id in list(self._periodic_tasks.keys()):
             self.stop_periodic_send(task_id)
 
-    async def send_stream_data(self, data: bytes, addr: Tuple[str, int]):
-        """
-        发送流式数据
-        
-        Args:
-            data: 要发送的流式数据
-            addr: 目标地址 (ip, port)
-        """
-        await self.send_async(data, addr)
-        _logger.debug(f"已发送流式数据，大小: {len(data)} 字节")
 
-    def start_stream_send(self, task_id: str, data_queue: asyncio.Queue, addr: Tuple[str, int]):
-        """
-        启动流式数据发送任务
-        
-        Args:
-            task_id: 任务ID
-            data_queue: 包含待发送数据的队列
-            addr: 目标地址 (ip, port)
-        """
-        if task_id in self._stream_tasks:
-            _logger.warning(f"流式发送任务 {task_id} 已存在")
-            return
-            
-        async def _stream_send_task():
-            try:
-                while True:
-                    # 从队列中获取数据并发送
-                    data = await data_queue.get()
-                    if data is None:  # 特殊值表示结束
-                        _logger.info(f"流式发送任务 {task_id} 收到结束信号")
-                        break
-                    await self.send_stream_data(data, addr)
-                    data_queue.task_done()
-            except asyncio.CancelledError:
-                _logger.info(f"流式发送任务 {task_id} 已取消")
-            except Exception as e:
-                _logger.error(f"流式发送任务 {task_id} 出错: {e}")
-        
-        self._stream_tasks[task_id] = asyncio.create_task(_stream_send_task())
-        _logger.info(f"已启动流式发送任务 {task_id}")
 
-    def stop_stream_send(self, task_id: str):
-        """停止流式数据发送任务"""
-        if task_id in self._stream_tasks:
-            self._stream_tasks[task_id].cancel()
-            del self._stream_tasks[task_id]
-            _logger.info(f"已停止流式发送任务 {task_id}")
-        else:
-            _logger.warning(f"流式发送任务 {task_id} 不存在")
-
-    def stop_all_stream_sends(self):
-        """停止所有流式数据发送任务"""
-        for task_id in list(self._stream_tasks.keys()):
-            self.stop_stream_send(task_id)
-
-    async def add_stream_data(self, task_id: str, data: bytes, data_queue: asyncio.Queue):
-        """
-        向流式任务添加数据
-        
-        Args:
-            task_id: 流式任务ID
-            data: 要发送的数据
-            data_queue: 数据队列
-        """
-        if task_id not in self._stream_tasks:
-            _logger.warning(f"流式任务 {task_id} 不存在")
-            return
-            
-        await data_queue.put(data)
-        _logger.debug(f"已向流式任务 {task_id} 添加数据，大小: {len(data)} 字节")
+    

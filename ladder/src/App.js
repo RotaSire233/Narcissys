@@ -1,14 +1,13 @@
 // src/App.js
 import React from 'react';
-import WorkSpace from './components/WorkSpace';
+import WorkSpace from './pages/workspace';
 import './App.css';
 
 function App() {
   return (
     <div className="app-container">
       <header className="app-header">
-        <h1>Narcissys 网关工作台</h1>
-        <p>梯形图&物联网&AI 探索现代网关工作台</p>
+        <h1>Narcissys</h1>
       </header>
       <main>
         <WorkSpace />

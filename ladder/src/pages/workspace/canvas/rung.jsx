@@ -1,7 +1,6 @@
-import React from 'react';
-import { useCanvas, RUNG_HEIGHT, ELEMENT_AREA_HEIGHT, ELEMENT_AREA_WIDTH } from './CanvasContext';
-import CanvasElement from './CanvasElement';
-import './workspace.css';
+import { useCanvas, RUNG_HEIGHT, ELEMENT_AREA_HEIGHT, ELEMENT_AREA_WIDTH } from "./CanvasCommon";
+import CanvasElement from "./canvas_elements";
+import './rung.css';
 
 export default function Rung({ rung, index, isSelected, onSelect, totalRungs, yPosition }) {
   const { removeRung, getElementConnections, rungs } = useCanvas();

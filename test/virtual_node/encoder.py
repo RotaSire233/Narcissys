@@ -1,42 +1,103 @@
 import socket
-from typing import Tuple, Union
+from typing import Union, TYPE_CHECKING
 from loguru import logger as _logger
 import json
 import asyncio
 from dataclasses import dataclass
 import struct
 import base64
-from virtual_node import (IMGFORMAT, AUDFORMAT,
-                          SensorRegisterStatic, SensorRegisterStream,
-                          )
-from virtual_node import Image as Istruct
-from virtual_node import Audio as Astruct
-from virtual_node import StreamStr as Sstruct
-from udp_driver import UdpTypeStatic, UdpTypeStream, RequestType
 
 
-def encode_function(data_structure: Union[SensorRegisterStatic, SensorRegisterStream])->bytes:
+   
+IMGFORMAT = {
+            '565': 'RGB565',
+            '888': 'RGB888',
+            'GS8': 'Grayscale8',
+            'BIN': 'Binary1'
+            }
+
+AUDFORMAT = {
+            'PCM': 'PCM',
+            'MP3': 'MP3',
+            'AAC': 'AAC'
+            }
+
+def encode_function(data_structure,
+                    uid: int)->bytes:
+    from udp_driver import UdpTypeStatic, UdpTypeStream, RequestType
     if data_structure.sensor_type == UdpTypeStatic.INT:
-        head = RequestType.INT
-        timestamp = timestamp_to_bytes(data_structure.timestamp)
+        head_btye = RequestType.INT.to_bytes
+        timestamp_btye = timestamp_to_bytes(data_structure.timestamp)
+        uid_btye = int_to_bytes(uid, 'uint32')
+        head_btyes = head_btye + timestamp_btye + uid_btye
+        data = data_structure.sensor_function
+        encoder = StaticEncoder(head_btyes, data, data_structure.sensor_type)
+        if type(data()) == int:
+            return head_btyes + int_to_bytes(data(), 'uint32'), encoder
+        else:
+            return None, None
     elif data_structure.sensor_type == UdpTypeStatic.STR:
-        head = RequestType.STR
-        timestamp = timestamp_to_bytes(data_structure.timestamp)
+        head_btye = RequestType.STR.to_bytes
+        timestamp_btye = timestamp_to_bytes(data_structure.timestamp)
+        uid_btye = int_to_bytes(uid, 'uint32')
+        data = data_structure.sensor_function
+        length = len(data)
+        length_btye = int_to_bytes(length, 'uint8')
+        head_btyes = head_btye + timestamp_btye + uid_btye + length_btye
+        encoder = StaticEncoder(head_btyes, data, data_structure.sensor_type)
+        if type(data()) == str:
+            return head_btyes + str_to_bytes(data()), encoder
+        else:
+            return None, None
+
     elif data_structure.sensor_type == UdpTypeStatic.FLO:
-        head = RequestType.FLO
-        timestamp = timestamp_to_bytes(data_structure.timestamp)
+        head_btye = RequestType.FLO.to_bytes
+        timestamp_btye = timestamp_to_bytes(data_structure.timestamp)
+        uid_btye = int_to_bytes(uid, 'uint32')
+        data = data_structure.sensor_function
+        head_btyes = head_btye + timestamp_btye + uid_btye
+        encoder = StaticEncoder(head_btyes, data, data_structure.sensor_type)
+        if type(data()) == float:
+            return head_btyes + float_to_bytes(data(), 'float32'), encoder
+        else:
+            return None, None
+
     elif data_structure.sensor_type == UdpTypeStream.STR:
-        if data_structure.sensor_extra.timely:
-            pass
-        else:
-            pass
+        head_btye = RequestType.FLT_I.to_bytes
+        timestamp_btye = timestamp_to_bytes(data_structure.timestamp)
+        uid_btye = int_to_bytes(uid, 'uint32')
+        extra = data_structure.sensor_extra
+        extra.uid = uid
+        encoder = StrEncoder(extra)
+        return head_btye + timestamp_btye + uid_btye, encoder
+
     elif data_structure.sensor_type == UdpTypeStream.IMG:
-        pass
+        head_btye = RequestType.IMG_I.to_bytes
+        timestamp_btye = timestamp_to_bytes(data_structure.timestamp)
+        uid_btye = int_to_bytes(uid, 'uint32')
+        if len(data_structure.sensor_extra.format) != 3:
+            raise ValueError("图像格式必须为3个字符")
+        format_btye = str_to_bytes(data_structure.sensor_extra.format)
+        width_btye = int_to_bytes(data_structure.sensor_extra.width, 'uint16')
+        height_btye = int_to_bytes(data_structure.sensor_extra.height, 'uint16')
+        extra = data_structure.sensor_extra
+        extra.uid = uid
+        encoder = ImageEncoder(data_structure.sensor_extra)
+        return head_btye + timestamp_btye + uid_btye + format_btye + width_btye + height_btye, encoder  
+
     elif data_structure.sensor_type == UdpTypeStream.AUD:
-        if data_structure.sensor_extra.timely:
-            pass
-        else:
-            pass
+        head_btye = RequestType.AUD_I.to_bytes
+        timestamp_btye = timestamp_to_bytes(data_structure.timestamp)
+        uid_btye = int_to_bytes(uid, 'uint32')
+        format_btye = str_to_bytes(data_structure.sensor_extra.format)
+        bit_depth_btye = int_to_bytes(data_structure.sensor_extra.bit_depth, 'uint32')
+        sample_rate_btye = int_to_bytes(data_structure.sensor_extra.audio_sample_rate, 'uint32')
+        channels_btye = int_to_bytes(data_structure.sensor_extra.channels, 'uint8')
+        extra = data_structure.sensor_extra
+        extra.uid = uid
+        encoder = AudioEncoder(data_structure.sensor_extra)
+        return head_btye + timestamp_btye + uid_btye + format_btye + sample_rate_btye + bit_depth_btye + channels_btye, encoder
+
 
 
 def timestamp_to_bytes(timestamp: int) -> bytes:
@@ -89,15 +150,32 @@ def str_to_bytes(value: str) -> bytes:
     len_byte = int_to_bytes(value_len, 'uint8')
     return len_byte + value.encode('utf-8')
 
+class StaticEncoder:
+    
+    def __init__(self, head: bytes, data: callable, type):
+        from udp_driver import UdpTypeStatic
+        self.head = head
+        self.data = data
+        self.encode_method = None
+        if type == UdpTypeStatic.INT:
+            self.encode_method = int_to_bytes
+        elif type == UdpTypeStatic.STR:
+            self.encode_method = str_to_bytes
+        elif type == UdpTypeStatic.FLO:
+            self.encode_method = float_to_bytes
+
+    def __call__(self):
+        return self.head + self.encode_method(self.data())
 
 class ImageEncoder:
-    def __init__(self, image_struct: Istruct):
+    def __init__(self, image_struct):
         self.width = image_struct.width
         self.height = image_struct.height
         self.format = image_struct.format
         self.chunk_size = image_struct.chunk_size
         # 初始化编码器状态
         self._encoder_state = None
+        self.uid = image_struct.uid
 
     def initialize_encoder(self, format_code: str, width: int, height: int, image_data):
         """
@@ -334,10 +412,11 @@ class ImageEncoder:
             self._encoder_state['current_col'] = 0
 
 class StrEncoder:
-    def __init__(self, str_struct: Sstruct):
+    def __init__(self, str_struct):
         self.chunk_size = str_struct.chunk_size  # 缓冲区大小
         self.timely = str_struct.timely    # False为实时模式，True为填充模式
         self._encoder_state = None
+        self.uid = str_struct.uid
 
     def initialize_encoder(self, text_data: str):
         """
@@ -411,7 +490,7 @@ class StrEncoder:
             self._encoder_state['buffer'] = ""
 
 class AudioEncoder:
-    def __init__(self, audio_struct: Astruct):
+    def __init__(self, audio_struct):
         self.sample_rate = audio_struct.sample_rate
         self.bit_depth = audio_struct.bit_depth
         self.channels = audio_struct.channels
@@ -419,6 +498,7 @@ class AudioEncoder:
         self.chunk_size = audio_struct.chunk_size
         self.timely = audio_struct.timely    # False为实时模式，True为填充模式
         self._encoder_state = None
+        self.uid = audio_struct.uid
 
     def initialize_encoder(self, audio_data: bytes):
         """

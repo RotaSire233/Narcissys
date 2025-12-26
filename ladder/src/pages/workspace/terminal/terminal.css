@@ -1,0 +1,82 @@
+.terminal-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  overflow: hidden;
+  font-family: 'Courier New', monospace;
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+  flex: 1;
+}
+
+.terminal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: #333;
+  color: white;
+  border-bottom: 1px solid #555;
+}
+
+.terminal-title {
+  font-weight: bold;
+  font-size: 14px;
+}
+
+
+.terminal-btn:hover {
+  background-color: #666;
+}
+
+.terminal-body {
+  flex: 1;
+  padding: 12px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.terminal-logs {
+  flex: 1;
+}
+
+.terminal-log {
+  margin-bottom: 6px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  display: flex;
+  align-items: flex-start;
+}
+
+.terminal-log .timestamp {
+  color: #808080;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.terminal-log .log-content {
+  flex: 1;
+}
+
+.terminal-log.info .log-content {
+  color: #d4d4d4;
+}
+
+.terminal-log.success .log-content {
+  color: #4ec9b0;
+}
+
+.terminal-log.warning .log-content {
+  color: #e0c94c;
+}
+
+.terminal-log.error .log-content {
+  color: #f48771;
+}

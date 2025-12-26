@@ -1,0 +1,37 @@
+.work-canvas-container {
+  width: 800px;
+  position: relative;
+  overflow: auto;
+  background-color: #f8f9fa;
+}
+.canvas-grid-background {
+  background-image: 
+    linear-gradient(#e0e0e0 1px, transparent 1px),
+    linear-gradient(90deg, #e0e0e0 1px, transparent 1px);
+  background-size: 20px 20px;
+  min-height: 100%;
+  position: relative;
+  min-width: max-content;
+}
+
+.work-canvas {
+  display: block;
+}
+
+.add-rung-button {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  background: #4CAF50;
+  color: white;
+  padding: 10px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  z-index: 10;
+}
+
+.add-rung-button:hover {
+  background: #45a049;
+}

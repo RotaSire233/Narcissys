@@ -10,10 +10,15 @@
   background: #006400;
   color: white;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  height: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .app-container {
   display: flex;
+  flex: 1;
   flex-direction: column;
   height: 100vh;
 }

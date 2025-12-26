@@ -1,0 +1,72 @@
+.property-panel {
+  width: auto; 
+  flex: 1; 
+  background: #ffffff;
+  border-left: 1px solid #e0e0e0;
+  padding: 20px;
+  overflow-y: auto;
+
+}
+.panel-section {
+  margin-bottom: 15px;
+}
+
+.panel-section label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+
+.panel-section textarea {
+  width: 100%;
+  height: 80px;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+
+.delete-btn {
+  background-color: #f44336;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 20px;
+  color: #999;
+}
+
+.model-properties-placeholder {
+  margin-top: 10px;
+}
+
+.model-mode-selector {
+  margin-bottom: 10px;
+}
+
+.model-mode-content {
+  margin-top: 10px;
+}
+
+.llm-mode-properties {
+  margin-top: 10px;
+}
+
+.param-selector {
+  margin-top: 10px;
+}
+
+.common-mode-properties {
+  padding: 10px 0;
+}
+
+.error {
+  color: #f44336;
+  font-size: 12px;
+  margin-top: 5px;
+}

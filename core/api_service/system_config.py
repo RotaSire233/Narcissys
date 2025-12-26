@@ -1,5 +1,6 @@
 import socket
 from dataclasses import dataclass
+import os
 
 def get_local_ip():
     """

@@ -25,7 +25,6 @@ def start_mosquitto(mos_path: str, config_path: str):
         
         time.sleep(1)
         
-        # 检查进程是否仍在运行
         if process.poll() is None:
             _logger.info("Mosquitto MQTT Broker 已成功启动在后台运行")
             _logger.info("PID:", process.pid)

@@ -20,10 +20,13 @@ class LadderCompile:
     def __init__(self):
         self.compiling = False
         self.registed_components = None
+        self.registed_components = {}
+        self.output_device = []
 
     def __call__(self, ladder_group: LadderGroup, connect_info: Dict):
+        
+        self.input_device = {}
         self.registed_components = {}
-        self.input_device = set()
         self.output_device = []
 
         # 创建ladder_group的深拷贝副本
@@ -78,7 +81,7 @@ class LadderCompile:
             dtype = component.dtype
             if dtype == LadderComponents.NORMAL_OPEN or dtype == LadderComponents.NORMAL_CLOSED:
                 component.sensor.append(info['properties']['option'])
-                self.input_device.add(info['properties']['option'])
+                self.input_device[info['properties']['option']] = 0
                
                 if info['properties']['option'] == "":
                     if name == "":

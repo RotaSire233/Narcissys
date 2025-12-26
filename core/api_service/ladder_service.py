@@ -1,3 +1,4 @@
+import json
 from core.core import app
 from fastapi import APIRouter
 from typing import Dict
@@ -7,7 +8,6 @@ from core.ladder_backend import *
 
 
 router = APIRouter(prefix="/api/ladder", tags=["ladder"])
-
 
 ladder_group = LadderGroup()
 compiler = LadderCompile()
@@ -40,9 +40,12 @@ async def compile_ladder(infos: Dict):
     if compiled["success"]:
         data_process = process(compiler)
         if data_process:
+            
             return {"success": True}
+        
     else:
         return {"success": False, "error": "error(Error Engine Will Be Added In Future)"}
+
 
 
 @router.get("/components/ladder/sensor/get")

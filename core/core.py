@@ -17,6 +17,8 @@ ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
 PID_LIST = []
 udp_manager = UdpManager()
 
+class CorePath:
+    root_dir = os.path.dirname(os.path.abspath(__file__))
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

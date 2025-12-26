@@ -28,7 +28,7 @@ def process(ladder: LadderCompile):
     output_list = ladder.output_device
 
     input_info = compile_str(input_list)
-    
+    _logger.info(f'input_info: {input_info}')
     from core.api_service.mqtt_server import SystemInfo
     mqtt_config = SystemInfo.SYSTEM_CONFIG.copy()
     mqtt_config['client_id'] = 'data_compiler'
@@ -39,18 +39,21 @@ def process(ladder: LadderCompile):
     for device, sensor in input_info.items():
         if device not in device_dict:
             device_dict[device] = []
+            device_dict[device].append(sensor)
         else:
             device_dict[device].append(sensor)
-    for device, sensor in device.items():
+    for device, sensor in device_dict.items():
+        uids = []
+        for s in sensor:
+            uids.append(global_uid.get_uid(device, s))
         data_location[udp_id] = device
-        uid = global_uid.get_uid(device, sensor)
         try:
             publisher = MqttPublisher(mqtt_config, 1883)
             payload = {
                 'rout': PUBLISH_TOPIC + "/" + device,
                 'sensor': sensor,
                 "driver_id": driver_info["driver_id"], 
-                "uid": uid,
+                "uid": uids,
                 "port": driver_info["port"],
                 "ip": get_local_ip(),
             }
@@ -59,12 +62,12 @@ def process(ladder: LadderCompile):
         except Exception as e:
             _logger.error(f"发布数据失败: {e}")
     return True
-def compile_str(input_list):
+def compile_str(input_list: dict):
     input_result = {}
     
     if input_list:
-        for i in input_list:
-            print(i)
+        for i, _ in input_list.items():
+            
             key, value = split_field(i).popitem()
             if key in input_result:
                 if isinstance(input_result[key], list):
@@ -87,8 +90,8 @@ def allocate_driver_id():
     """
     ——————————————————————————————————————————————————————————————————————————————————————————————————————————————
     # 关键注释：当前Python版本只支持单UDP管理，可能未来会考虑多驱动管理
-    # 预计处理节点：C++版本/对于这个功能有需求时，添加这个特性，
-    # 还是这句话Python版本作为社区版本，这个特性属于企业级特性，一般用户不需要这么复杂的玩意
+    # 预计处理节点：C++版本/对于这个功能有需求时，添加这个特性
+    # 还是这句话Python版本作为社区版
     ——————————————————————————————————————————————————————————————————————————————————————————————————————————————
     """
     return udp_driver_id

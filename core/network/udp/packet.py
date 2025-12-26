@@ -86,7 +86,7 @@ class BaseDecoder:
     def _parse_int(self, data: bytes, length: int) -> int:
         """ 任意 int(uint8 ~ uint128) 解析方法 """
         if len(data) < self._ptr + length:
-            raise ValueError("Insufficient data for float field")
+            raise ValueError("Insufficient data for int field")
         int_value = int.from_bytes(data[self._ptr:self._ptr+length], byteorder='big')
         self._ptr += length
         return int_value

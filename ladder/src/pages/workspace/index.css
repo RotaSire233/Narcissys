@@ -1,0 +1,133 @@
+/* 工作区主容器*/
+.workspace-with-tabs {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+}
+
+/* 导航栏 */
+.tab-navigation {
+  width: 50px;
+  min-width: 50px;
+  background: #023214;
+  display: flex;
+  flex-direction: column;
+  padding: 5px 0;
+}
+
+/* 工作区容器 */
+.workspace-container {
+  display: flex;
+  height: calc(100vh - 60px);
+  flex: 1;
+  overflow: hidden;
+}
+
+.canvas-title {
+  display: flex;
+  height: calc(100vh - 60px);
+  flex: 1;
+  flex-direction: column;
+}
+
+/* 信息表单容器 */
+.workspace-list {
+  display: flex;
+  height: calc(100vh - 60px);
+  flex: 1;
+  overflow: hidden;
+}
+
+/* 导航按钮 */
+.tab-button {
+  height: 30px;
+  background: transparent;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  text-align: center;
+  font-size: 14px;
+  border-left: 4px solid transparent;
+  transition: all 0.2s;
+  margin-top: 0;
+}
+
+.tab-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.tab-button.active {
+  background: rgba(255, 255, 255, 0.2);
+  border-left: 4px solid #4caf50;
+}
+
+/*文件树容器*/
+.tool-bar { 
+  width: 200px;
+  height: 100%;
+  background-color: hwb(0 94% 6%);
+  right: 0;
+  top: 0;
+  overflow-y: auto;
+  position: relative;
+}
+/*文件树容器-画布容器拖动条*/
+.tc-drag-bar{ 
+  width: 2px;
+  height: 100%;
+  background-color: hsl(0, 0%, 17%);
+  /*cursor: col-resize;*/
+  top: 0;
+  right: 0;
+  z-index: 10;
+}
+
+.tc-drag-bar.active {
+  background-color: #464646;;
+}
+
+.tf-drag-bar{ 
+  height: 6px;
+  width: 100%;
+  background-color: hsl(0, 0%, 70%);
+  cursor: row-resize;
+  top: 0;
+  right: 0;
+  z-index: 10;
+}
+
+.tf-drag-bar.active {
+  background-color: #464646;;
+}
+
+
+
+.workspace-canvas-terminal {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.workspace-canvas-terminal .canvas-container {
+  display: flex;
+  flex-direction: row;
+  overflow: auto;
+  min-width: 0;
+}
+
+
+.ct-drag-bar{ 
+  height: 6px;
+  width: 100%;
+  background-color: hsl(0, 0%, 70%);
+  cursor: row-resize;
+  top: 0;
+  right: 0;
+  z-index: 10;
+}
+
+.ct-drag-bar.active {
+  background-color: #464646;;
+}

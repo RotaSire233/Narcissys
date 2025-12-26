@@ -1,0 +1,24 @@
+/* 梯级相关样式 */
+.rung {
+  cursor: pointer;
+}
+
+.rung-background {
+  pointer-events: all;
+}
+
+.rung.selected-rung .rung-background {
+  fill: rgba(33, 150, 243, 0.1);
+}
+
+.rung-number {
+  font-family: monospace;
+  font-size: 14px;
+  fill: #666;
+  font-weight: bold;
+}
+
+.remove-rung-button {
+  cursor: pointer;
+}
+

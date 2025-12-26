@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useCanvas } from './CanvasContext';
-import { MqttApi, LLMApi } from '../../services/api';
-import './workspace.css';
+import { useCanvas } from '../canvas/CanvasCommon';
+import { useNetWorkInfo } from '../infolist/InfoCommon';
+import './setting.css';
 
-export default function PropertyPanel() {
+export default function PropertyPanel({style}) {
   const canvas = useCanvas();
+  const { mqttClients, mqttLoading, fetchMqttClients, refreshMqttClients,
+          apiKeys, apiLoading, fetchApiKeys} = useNetWorkInfo();
   const { selectedElement, removeElement, updateElementProperties } = canvas;
   const [comment, setComment] = useState('');
   const [name, setName] = useState('');
@@ -41,8 +43,16 @@ export default function PropertyPanel() {
     setLoading(true);
     setError(null);
     try {
-      // 使用缓存数据或强制刷新数据
-      const data = forceRefresh ? await MqttApi.refresh() : await MqttApi.getList();
+      let data;
+      if (forceRefresh) {
+        await refreshMqttClients();
+        data = mqttClients;
+      } else {
+        if (!mqttClients || Object.keys(mqttClients).length === 0) {
+          await fetchMqttClients();
+        }
+        data = mqttClients;
+      }
       const formattedData = [];
       
       if (data && data.devices) {
@@ -107,7 +117,8 @@ export default function PropertyPanel() {
     
     setModelListLoading(true);
     try {
-      const data = await LLMApi.getList();
+      await fetchApiKeys();
+      const data = apiKeys;
       const formattedModels = [];
       
       if (data) {
@@ -261,7 +272,7 @@ export default function PropertyPanel() {
   const isModelElement = selectedElement.type.id === 'model';
   
   return (
-    <div className="property-panel">
+    <div className="property-panel" style={style}>
       <h3>{selectedElement.type.name} 属性</h3>
       
       <div className="panel-section">

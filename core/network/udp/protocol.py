@@ -228,13 +228,11 @@ class RequestType(Enum):
         id = flt_init.id
         uid = flt_init.uid
         timestamp = flt_init.timestamp
-        stream_len = flt_init.stream_length
         return {
                 'id': id,
                 'uid': uid,
                 'name': None,
                 'timestamp': timestamp,
-                'stream_len': stream_len,
                 'type': "flt"
                 }
     
