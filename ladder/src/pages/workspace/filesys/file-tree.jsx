@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useFileInfo } from '../infolist/InfoCommon';
 import './file-tree.css';
 
 // 树形组件
@@ -57,66 +58,17 @@ const TreeNode = ({ node, onToggle, onSelect, level = 0 }) => {
 };
 
 const FileTree = ({ onSelectFile, style}) => {
-  const [treeData, setTreeData] = useState([
-    {
-      name: 'compile',
-      toggled: false,
-      children: [
-        { name: 'file1' },
-        { name: 'file2' }
-      ]
-    },
-    {
-      name: 'runtime',
-      toggled: false,
-      children: [
-        { name: 'file1' },
-        { name: 'file2' }
-      ]
-    },
-    {
-      name: 'runtime',
-      toggled: false,
-      children: [
-        { name: 'file1' },
-        { name: 'file2' }
-      ]
-    },
-    {
-      name: 'runtime',
-      toggled: false,
-      children: [
-        { name: 'file1' },
-        { name: 'file2' }
-      ]
-    },
-    {
-      name: 'runtime',
-      toggled: false,
-      children: [
-        { name: 'file1' },
-        { name: 'file2' }
-      ]
-    },
-    {
-      name: 'runtime',
-      toggled: false,
-      children: [
-        { name: 'file1' },
-        { name: 'file2' }
-      ]
-    },
-    {
-      name: 'runtime',
-      toggled: false,
-      children: [
-        { name: 'file1' },
-        { name: 'file2' }
-      ]
-    }
-  ]);
-
+  const { fileTree, fetchFile, fileLoading, fileError } = useFileInfo();
+  const [treeData, setTreeData] = useState([]);
   const [cursor, setCursor] = useState(null);
+
+  useEffect(() => {
+    fetchFile();
+  }, []);
+
+  useEffect(() => {
+    setTreeData(fileTree);
+  }, [fileTree]);
 
   const onToggle = (node, toggled) => {
     if (cursor) {
@@ -146,6 +98,28 @@ const FileTree = ({ onSelectFile, style}) => {
       onSelectFile(node.name);
     }
   };
+
+  if (fileLoading) {
+    return (
+      <div className="file-tree-container" style={style}>
+        <h3>文件管理</h3>
+        <div className="tree-root" style={{ height: 'calc(100% - 40px)', overflow: 'hidden' }}>
+          <div>加载中...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (fileError) {
+    return (
+      <div className="file-tree-container" style={style}>
+        <h3>文件管理</h3>
+        <div className="tree-root" style={{ height: 'calc(100% - 40px)', overflow: 'hidden' }}>
+          <div>错误: {fileError}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="file-tree-container" style={style}>

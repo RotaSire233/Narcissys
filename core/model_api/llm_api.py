@@ -10,12 +10,6 @@ from loguru import logger as _logger
 import uuid
 
 
-@dataclass(frozen=True)
-class SupportList:
-    sil = ("siliconflow", "https://api.siliconflow.cn/v1")
-    ope = ("openai", "https://api.openai.com/v1")
-    zhi = ("zhipu", "https://open.bigmodel.cn/api/paas/v4/")
-    qwn = ("qwen", "https://dashscope.aliyuncs.com/compatible-mode/v1")
 
 @dataclass
 class KeyView:
@@ -34,17 +28,17 @@ class ApiKeys:
         with open(os.path.join(os.path.dirname(__file__), "keys/api_key.json"), "r") as self.f:
             self.keys_json: Dict = json.load(self.f)
         self.info: Dict[str, KeyView] = {}
-        self.info["siliconflow"]= KeyView(self.keys_json["siliconflow"],
-                                   SupportList.sil[1])
+        self.info["siliconflow"]= KeyView(self.keys_json["siliconflow"]["key"],
+                                   self.keys_json["siliconflow"]["url"])
 
-        self.info["qwen"] = KeyView(self.keys_json["qwen"],
-                             SupportList.qwn[1])
+        self.info["qwen"] = KeyView(self.keys_json["qwen"]["key"],
+                             self.keys_json["qwen"]["url"])
         
-        self.info["openai"] = KeyView(self.keys_json["openai"],
-                                 SupportList.ope[1])
+        self.info["openai"] = KeyView(self.keys_json["openai"]["key"],
+                                 self.keys_json["openai"]["url"])
         
-        self.info["zhipu"] = KeyView(self.keys_json["zhipu"],
-                               SupportList.zhi[1])
+        self.info["zhipu"] = KeyView(self.keys_json["zhipu"]["key"],
+                               self.keys_json["zhipu"]["url"])
         
     def get_api_info(self, api_name: str) -> str:
         """
@@ -52,14 +46,26 @@ class ApiKeys:
         """
         return self.info.get(api_name)
     
-    def update_api_key(self, api_name: str, api_key: str):
+    def update_api_key(self, api_name: str,
+                        api_key: str = None,
+                          url: str = None):
             """
             更新api key
             """
-            self.keys_json[api_name] = api_key
+            self.keys_json[api_name]["key"] = api_key
+            self.keys_json[api_name]["url"] = url
             with open(os.path.join(os.path.dirname(__file__), "keys/api_key.json"), "w") as f:
                 json.dump(self.keys_json, f, indent=2)
             self.__init__()
+
+    def del_api_key(self, api_name: str):
+        """
+        删除api key
+        """
+        del self.keys_json[api_name]
+        with open(os.path.join(os.path.dirname(__file__), "keys/api_key.json"), "w") as f:
+            json.dump(self.keys_json, f, indent=2)
+        self.__init__()
 
 class ApiConfig:
     def __init__(self, api_key: str = None, base_url: str = None):

@@ -1,0 +1,20 @@
+{
+    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855": [
+        {
+            "ab_path": "c:\\Users\\GUO\\Desktop\\Narcissys_716\\Narcissys\\core\\save\\groups",
+            "name": "groups",
+            "size": 0,
+            "type": "folder",
+            "create_time": "2025-12-31T15:37:29.639170",
+            "modified_time": "2025-12-31T15:37:29.639170"
+        },
+        {
+            "ab_path": "c:\\Users\\GUO\\Desktop\\Narcissys_716\\Narcissys\\core\\save\\projects",
+            "name": "projects",
+            "size": 0,
+            "type": "folder",
+            "create_time": "2025-12-31T14:59:09.444602",
+            "modified_time": "2025-12-31T15:26:35.721074"
+        }
+    ]
+}

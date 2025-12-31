@@ -27,8 +27,12 @@ async def api_keys_info():
     return api_keys.keys_json
 @router.post("/api_keys/update")
 async def update_api_keys(update_info: Dict):
-    api_name, api_key = update_info["api_name"], update_info["api_key"]
-    api_keys.update_api_key(api_name, api_key)
+    api_name, api_key, url = update_info["api_name"], update_info["api_key"], update_info["api_url"]
+    if url == "del" and api_key == "del":
+        api_keys.del_api_key(api_name)
+        _logger.info(f"delete api key: {api_name}")
+        return {"code": "200"}
+    api_keys.update_api_key(api_name, api_key, url)
     _logger.info(f"update api key: {api_name}")
     return {"code": "200"}
 

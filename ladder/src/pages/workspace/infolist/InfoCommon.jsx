@@ -1,4 +1,4 @@
-import { LLMApi, MqttApi } from '../../../services/api';
+import { LLMApi, MqttApi, FileApi } from '../../../services/api';
 import React, {createContext, useState,useContext, useEffect, use } from 'react';
 
 // 创建网络数据上下文
@@ -22,6 +22,11 @@ export function NetWorkInfo({ children }){
   const [mqttLoading, setMqttLoading] = useState(false);
   const [apiError, setApiError] = useState(null);
   const [mqttError, setMqttError] = useState(null);
+
+  const [fileList, setFileList] = useState([]);
+  const [fileTree, setFileTree] = useState([]);
+  const [fileLoading, setFileLoading] = useState(false);
+  const [fileError, setFileError] = useState(null);
   // 获取API密钥
   const fetchApiKeys = async () => {
       setApiLoading(true);
@@ -48,7 +53,6 @@ export function NetWorkInfo({ children }){
 
     } catch (err) {
       console.error('保存API密钥失败:', err);
-      // 恢复原来的值
       fetchApiKeys();
     }
   };
@@ -82,6 +86,101 @@ export function NetWorkInfo({ children }){
       setMqttLoading(false);
     }
   };
+  
+  const fetchFile= async () => {
+    setApiLoading(true);
+    setApiError(null);
+    try {
+      const data = await FileApi.getList();
+      console.log('Received file data:', data);
+      setFileList(data);
+      setFileTree(convertPathsToTree(data));
+    } catch (err) {
+      setFileError(err.message);
+      console.error('获取文件列表失败:', err);
+    } finally {
+      setFileLoading(false);
+
+    }
+  }
+
+  const refreshFile = async () => {
+    setFileLoading(true);
+    setFileError(null);
+    try {
+      const data = await FileApi.refresh();
+      setFileList(data);
+      setFileTree(convertPathsToTree(data));
+    } catch (err) {
+      setFileError(err.message);
+      console.error('刷新文件列表失败:', err);
+    } finally {
+      setFileLoading(false);
+    }
+  }
+
+  const add_file = async (filePath, fileInfo) => {
+     try{
+      await FileApi.addFile(filePath, fileInfo);
+     } catch (err) {
+       console.error('添加文件失败:', err);
+     }
+     fetchFile();
+  }
+
+  const delete_file = async (filePath) => {
+     try{
+      await FileApi.deleteFile(filePath);
+     } catch (err) {
+       console.error('删除文件失败:', err);
+     }
+     fetchFile();
+  }
+
+   const convertPathsToTree = (paths) => {
+        const root = { children: [] };
+        
+        paths.forEach(pathObj => {
+          const path = pathObj.file;
+          const type = pathObj.type;
+          const parts = path.replace(/^\\/, '').split('\\').filter(part => part !== '');
+          
+          if (parts.length === 0) return;
+          
+          let current = root;
+          
+          for (let i = 0; i < parts.length; i++) {
+            const part = parts[i];
+            const isLast = i === parts.length - 1;
+            
+            if (!current.children) {
+              current.children = [];
+            }
+            
+            let existingNode = current.children.find(child => child.name === part);
+            
+            if (!existingNode) {
+              existingNode = {
+                name: part,
+                type: isLast ? type : 'folder',
+                toggled: false,
+              };
+              
+              if (!isLast) {
+                existingNode.children = [];
+              }
+              
+              current.children.push(existingNode);
+            }
+            
+            if (!isLast) {
+              current = existingNode;
+            }
+          }
+        });
+        
+        return root.children;
+      };
 
   return (
     <NetWorkContext.Provider value={{
@@ -91,11 +190,19 @@ export function NetWorkInfo({ children }){
       mqttClients,
       mqttLoading,
       mqttError,
+      fileTree,
+      fileLoading,
+      fileError,
+      
       fetchApiKeys,
       handleApiKeyChange,
       saveApiKeyChange,
       fetchMqttClients,
-      refreshMqttClients
+      refreshMqttClients,
+      fetchFile,
+      refreshFile,
+      add_file,
+      delete_file
     }}>
       {children}
     </NetWorkContext.Provider>

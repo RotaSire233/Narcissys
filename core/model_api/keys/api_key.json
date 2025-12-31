@@ -1,6 +1,18 @@
 {
-  "siliconflow": "sk-gmzrrhtzsjnerwygsmhvmfiqjyblktokxwndnmuxmlpzmuii",
-  "openai": "",
-  "zhipu": "",
-  "qwen": ""
+  "siliconflow": {
+    "url": "https://api.siliconflow.cn/v1",
+    "key": "sk-gmzrrhtzsjnerwygsmhvmfiqjyblktokxwndnmuxmlpzmuii"
+  },
+  "openai": {
+    "url": "https://api.openai.com/v1",
+    "key": ""
+  },
+  "zhipu": {
+    "url": "https://open.bigmodel.cn/api/paas/v4/",
+    "key": ""
+  },
+  "qwen": {
+    "url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    "key": ""
+  }
 }

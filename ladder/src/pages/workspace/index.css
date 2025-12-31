@@ -71,6 +71,7 @@
   overflow-y: auto;
   position: relative;
 }
+
 /*文件树容器-画布容器拖动条*/
 .tc-drag-bar{ 
   width: 2px;
@@ -130,4 +131,11 @@
 
 .ct-drag-bar.active {
   background-color: #464646;;
+}
+
+.workspace-setting{
+  display: flex;
+  height: calc(100vh - 60px);
+  flex: 1;
+  overflow: hidden;
 }

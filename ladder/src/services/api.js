@@ -98,14 +98,14 @@ export const LLMApi = {
     }
   },
   
-  modifyList: async (apiName, apiKey) => {
+  modifyList: async (apiName, value) => {
     try {
       const response = await fetch(`${API_BASE_URL}/model/api_keys/update`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ api_name: apiName, api_key: apiKey })
+        body: JSON.stringify({ api_name: apiName, api_key: value.key, api_url: value.url})
       });
       
       if (!response.ok) {
@@ -169,4 +169,74 @@ export const MqttApi = {
     mqttDeviceCacheTimestamp = null;
     return await MqttApi.getList();
   }
+}
+
+export const FileApi = {
+
+  getList: async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/file/info`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('获取文件表单失败:', error);
+      throw error;
+    }
+  },
+
+  deleteFile: async (filePath) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/file/del`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ path: filePath })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      } 
+
+    }catch (error) {
+      console.error('删除文件失败:', error);
+      throw error;
+    }
+  },
+
+  addFile: async (filePath, fileInfo) => { 
+    try {
+      const response = await fetch(`${API_BASE_URL}/file/add`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ path: filePath, info: fileInfo })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      } 
+
+    }catch (error) {
+      console.error('删除文件失败:', error);
+      throw error;
+    }
+  },
+
+  refresh: async () => {
+    return await FileApi.getList();
+  },
+
+
+
 }

@@ -7,6 +7,8 @@ import WorkCanvas from "./canvas/work_canvas";
 import GroupTabs from "./canvas/canvas_title";
 import Terminal from "./terminal/terminal";
 import PropertyPanel from "./setting/setting";
+import SetLLM from "./setting/set_nav";
+import InfoList from "./infolist/info_list";
 import './index.css'
 
 
@@ -58,7 +60,8 @@ export default function WorkSpace() {
     const [resizeMode, setResizeMode] = useState(null); 
     const tabs = [
         { id: 'workspace1', name: '画布' },
-        { id: 'workspace2', name: '节点' }
+        { id: 'workspace2', name: '节点' },
+        { id: 'workspace3', name: '设置' },
     ];
      const startResizing = (e, mode) => {
       e.preventDefault();
@@ -152,7 +155,16 @@ export default function WorkSpace() {
         
         <div className="workspace-list"> 
         <NetWorkInfo>
+        <InfoList/>
+        </NetWorkInfo>
+        </div>
+      )}
 
+      {activeTab === 'workspace3' && (
+        
+        <div className="workspace-setting"> 
+        <NetWorkInfo>
+        <SetLLM/>
         </NetWorkInfo>
         </div>
       )}

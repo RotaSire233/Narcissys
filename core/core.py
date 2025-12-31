@@ -200,4 +200,5 @@ def _start_compenents():
     from .api_service import (model_service,
                               ladder_service,
                               mqtt_server,
+                              file_service
                               )
