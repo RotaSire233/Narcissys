@@ -1,0 +1,40 @@
+.delete-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    margin: 0 0 0 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    opacity: 0; 
+    transition: opacity 0.2s ease, transform 0.1s ease; /* 添加transform过渡 */
+}
+
+
+.tree-node-item:hover .delete-button,
+.delete-button:hover {
+    opacity: 1; 
+}
+
+/* 添加按下时的缩放效果 */
+.delete-button:active {
+    transform: scale(0.9);
+}
+
+.delete-button .icon {
+    width: 100%;
+    height: 100%;
+    transition: all 0.3s ease;
+    filter: invert(85%); /* 调整颜色以匹配界面风格 */
+}
+
+.delete-button:hover .icon {
+    filter: invert(70%); /* 悬停时的深色遮罩效果 */
+}
+
+
+.delete-button:active .icon {
+    filter: invert(60%);
+}

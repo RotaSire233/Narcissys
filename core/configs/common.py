@@ -18,4 +18,12 @@ class DtypeList:
     image = "img"
     audio = "aud"
 
+class GlobalCacheConfig:
+    """ 全局缓存 配置类 """                
+    CACHE_LEN_SIZE: Final[int] = 32                # 默认全局缓存长度
+    CACHE_RAM_SIZE: Final[int] = 64 * 1024 * 1024  # 默认全局缓存大小
+    OVERFLOW_THRESHOLD: Final[int] = 1.5              # 缓存溢出阈值
+    WARNING_THRESHOLD: Final[int] = 1.2               # 缓存警告阈值
+
+
     

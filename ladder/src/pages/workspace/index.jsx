@@ -1,60 +1,20 @@
 import React, {createContext, useContext, use, useState} from "react";
 import { CanvasProvider, useCanvas } from "./canvas/CanvasCommon";
 import { NetWorkInfo , useNetWorkInfo} from "./infolist/InfoCommon";
-import FileTree from "./filesys/file-tree";
+import {FileInfo, useFiles} from "./filesys/FileCommon"; 
+import FileTree from "./filesys/file_tree";
 import ToolBox from "./canvas/tool_box";
-import WorkCanvas from "./canvas/work_canvas";
 import GroupTabs from "./canvas/canvas_title";
-import Terminal from "./terminal/terminal";
-import PropertyPanel from "./setting/setting";
 import SetLLM from "./setting/set_nav";
 import InfoList from "./infolist/info_list";
+import CanvasManager from "./canvas/canvas";
 import './index.css'
 
-
-const CombinedContext = createContext();
-
-
-const CombineProvider = ({ children }) => {
-  return (
-    <CanvasProvider>
-      <NetWorkInfo>
-        <CombineProviderContent>{children}</CombineProviderContent>
-      </NetWorkInfo>
-    </CanvasProvider>
-  );
-};
-
-
-const CombineProviderContent = ({ children }) => {
-  const canvasContext = useCanvas();
-  const networkContext = useNetWorkInfo();
-
-  const combinedData = {
-    canvs: canvasContext,
-    network: networkContext
-  };
-
-  return (
-    <CombinedContext.Provider value={combinedData}>
-      {children}
-    </CombinedContext.Provider>
-  );
-};
-
-export const useCombinedData = () => {
-  const context = useContext(CombinedContext);
-  if (!context) {
-    throw new Error('useCombinedData must be used within a CombineProvider');
-  }
-  return context;
-};
 
 export default function WorkSpace() {
     const [activeTab, setActiveTab] = useState('workspace1');
     const [fileTreeWidth, setFileTreeWidth] = useState(250);
     const [toolBoxHeight, setToolBoxHeight] = useState(250);
-    const [canvasHeight, setCanvasHeight] = useState(500);
   
     const [isResizing, setIsResizing] = useState(false);
     const [resizeMode, setResizeMode] = useState(null); 
@@ -89,12 +49,7 @@ export default function WorkSpace() {
         const newHeight = e.clientY - containerRect.top;
         const adjustedHeight = Math.max(30, Math.min(newHeight, 300));
         setToolBoxHeight(adjustedHeight);
-      } else if (isResizing && resizeMode === 'ct') {
-        const containerRect = document.querySelector('.workspace-container').getBoundingClientRect();
-        const newHeight =  e.clientY - containerRect.top;
-        const adjustedHeight = Math.max(200, Math.min(newHeight, 500));
-        setCanvasHeight(adjustedHeight);
-      }
+      } 
     }
 
     React.useEffect(() => {
@@ -128,46 +83,36 @@ export default function WorkSpace() {
         ))}
       </div>
       
-      {activeTab === 'workspace1' && (
-        <div className="canvas-title">
-          <GroupTabs/>
-        <div className="workspace-container">
-          <CombineProvider>
-            <div className='tool-bar'>
-                <ToolBox style={{ height: `${toolBoxHeight}px` }}/>
-                <div className="tf-drag-bar" onMouseDown={(e) => startResizing(e, 'tf')}></div>
-                <FileTree onSelectFile={(fileName) => console.log('Selected file:', fileName)} />
-            </div>
-            <div className="workspace-canvas-terminal">
-              <div className="canvas-container">
-                <WorkCanvas style={{ height: `${canvasHeight}px` }}/>
-                <PropertyPanel />
+      {/* 将FileInfo提升到所有页面共享的位置 */}
+      <NetWorkInfo>
+        <FileInfo>
+          {activeTab === 'workspace1' && (
+            <div className="canvas-title">
+              <GroupTabs/>
+              <div className="workspace-container">
+                <div className='tool-bar'>
+                  <ToolBox style={{ height: `${toolBoxHeight}px` }}/>
+                  <div className="tf-drag-bar" onMouseDown={(e) => startResizing(e, 'tf')}></div>
+                  <FileTree/>
+                </div>
+                <CanvasManager/>
               </div>
-              <div className="ct-drag-bar" onMouseDown={(e) => startResizing(e, 'ct')}></div>
-               <Terminal title="Terminal"/>
             </div>
-          </CombineProvider>
-        </div>
-        </div>
-      )}
-      
-      {activeTab === 'workspace2' && (
-        
-        <div className="workspace-list"> 
-        <NetWorkInfo>
-        <InfoList/>
-        </NetWorkInfo>
-        </div>
-      )}
+          )}
+          
+          {activeTab === 'workspace2' && (
+            <div className="workspace-list"> 
+              <InfoList/>
+            </div>
+          )}
 
-      {activeTab === 'workspace3' && (
-        
-        <div className="workspace-setting"> 
-        <NetWorkInfo>
-        <SetLLM/>
-        </NetWorkInfo>
-        </div>
-      )}
+          {activeTab === 'workspace3' && (
+            <div className="workspace-setting"> 
+              <SetLLM/>
+            </div>
+          )}
+        </FileInfo>
+      </NetWorkInfo>
     </div>
     
   );

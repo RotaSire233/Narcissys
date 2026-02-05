@@ -6,9 +6,6 @@ from paho.mqtt.enums import CallbackAPIVersion
 logger = logging.getLogger(__name__)
 
 def _on_message(client, userdata, msg):
-    """
-    默认的 MQTT 消息回调函数
-    """
     try:
         logger.debug(f"[MQTT-SUB][RECV] 收到消息 Topic: {msg.topic}")
         payload = json.loads(msg.payload.decode("utf-8"))
@@ -39,7 +36,6 @@ class MqttSubscriber:
             logger.debug("[MQTT-SUB][INFO] 使用用户名密码进行认证")
             self.client.username_pw_set(mqtt["username"], mqtt["password"])
 
-        # 设置回调函数
         self.client.on_message = on_message
 
         try:

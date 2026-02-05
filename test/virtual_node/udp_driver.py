@@ -15,13 +15,6 @@ class UdpTypeStatic:
     FLO = "float"
     STR = "string"
 
-@dataclass(frozen=True)
-class UdpTypeStream:
-    STR = "string/stream"
-    IMG = "image"
-    AUD = "audio"
-
-
 class _RequestStruct:
     """ 请求类型和结构配置 """
     def __init__(self, channel: int, port: int, decode: int):
@@ -44,13 +37,6 @@ class RequestType:
     INT = _RequestStruct(channel=0x01, port=0x00, decode=0x11)   # 整数
     STR = _RequestStruct(channel=0x01, port=0x00, decode=0x12)   # 字符串
 
-    FLT_I = _RequestStruct(channel=0x01, port=0x00, decode=0x13)   # 流式文本初始化
-    AUD_I = _RequestStruct(channel=0x01, port=0x00, decode=0x14)   # 音频初始化
-    IMG_I = _RequestStruct(channel=0x01, port=0x00, decode=0x15)   # 图片初始化
-    FLT = _RequestStruct(channel=0x01, port=0x01, decode=0x13)   # 流式文本
-    AUD = _RequestStruct(channel=0x01, port=0x01, decode=0x14)   # 音频
-    IMG = _RequestStruct(channel=0x01, port=0x01, decode=0x15)   # 图片
-
 class UdpClientDriver:
     def __init__(self,):
         self.mqtt_addr: str = None
@@ -69,9 +55,7 @@ class UdpClientDriver:
         
         try:
             while self.finding:
-                # 设置超时以便能够响应中断
                 sock.settimeout(1.0)
-                # 接收数据
                 try:
                     data, addr = sock.recvfrom(buffer_size)
                     if data:
@@ -83,7 +67,6 @@ class UdpClientDriver:
                                 self.finding = False
                             return broker_addr, broker_port
                 except socket.timeout:
-                    # 超时继续循环，以便检查 self.finding 状态
                     continue
 
         except KeyboardInterrupt:

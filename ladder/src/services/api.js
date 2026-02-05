@@ -7,74 +7,7 @@ let mqttDeviceCache = null;
 let mqttDeviceCacheTimestamp = null;
 const CACHE_DURATION = 5 * 60 * 1000; // 缓存5分钟
 
-// 梯形图API服务
-export const ladderApi = {
-  // 添加元件到后端
-  addComponent: async (component, rungIndex) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/ladder/components/ladder/add`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ ...component, rung_index: rungIndex })
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      return await response.json();
-    } catch (error) {
-      console.error('添加元件失败:', error);
-      throw error;
-    }
-  },
-  
 
-  deleteComponent: async (componentId, rungIndex) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/ladder/components/ladder/delete`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ id: componentId, rung_index: rungIndex })
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      return await response.json();
-    } catch (error) {
-      console.error('删除元件失败:', error);
-      throw error;
-    }
-  },
-
-  // 编译梯形图
-  compileLadder: async (ladderData) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/ladder/components/ladder/compile`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(ladderData)
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      return await response.json();
-    } catch (error) {
-      console.error('编译梯形图失败:', error);
-      throw error;
-    }
-  }
-};
 // LLM Api
 export const LLMApi = {
 
@@ -93,7 +26,7 @@ export const LLMApi = {
       
       return await response.json();
     } catch (error) {
-      console.error('获取模型表单失败:', error);
+      console.error('Fail to get model list:', error);
       throw error;
     }
   },
@@ -114,7 +47,7 @@ export const LLMApi = {
       
       return await response.json();
     } catch (error) {
-      console.error('修改密钥表单失败', error);
+      console.error('Fail to modify model list:', error);
       throw error;
     }
   }
@@ -128,7 +61,7 @@ export const MqttApi = {
     const now = Date.now();
     if (mqttDeviceCache && mqttDeviceCacheTimestamp && 
         (now - mqttDeviceCacheTimestamp) < CACHE_DURATION) {
-      console.log('返回缓存的MQTT设备数据');
+      console.log('Return cached MQTT device list');
       return mqttDeviceCache;
     }
 
@@ -152,7 +85,7 @@ export const MqttApi = {
       
       return data;
     } catch (error) {
-      console.error('获取节点表单失败:', error);
+      console.error('Fail to get MQTT device list:', error);
       throw error;
     }
   },
@@ -172,7 +105,25 @@ export const MqttApi = {
 }
 
 export const FileApi = {
-
+  forceRefresh: async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/file/refresh`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Fail to get file list:', error);
+      throw error;
+    }
+  }, 
   getList: async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/file/info`, {
@@ -188,11 +139,80 @@ export const FileApi = {
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error('获取文件表单失败:', error);
+      console.error('Fail to get file list:', error);
       throw error;
     }
   },
+  getJson: async (filePath) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/file/read`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ path: filePath })
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      return data;
 
+  } catch (error) {
+      console.error('Fail to get file content:', error);
+      throw error;
+    }
+  },
+  
+  modifyName: async (path, newName) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/file/modify`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ path: path, name: newName })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Fail to modify file name:', error);
+      throw error;
+    }
+  },
+  movPath: async (srcPath, destPath) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/file/mov`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ srcpath: srcPath, destpath: destPath })
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Fail to move file:', error);
+      throw error;
+    }
+  },
+  copyPath: async (srcPath, destPath) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/file/copy`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ srcpath: srcPath, destpath: destPath })
+      });
+    } catch (error) {
+      console.error('Fail to copy file:', error);
+      throw error;
+    }
+  },
   deleteFile: async (filePath) => {
     try {
       const response = await fetch(`${API_BASE_URL}/file/del`, {
@@ -208,27 +228,46 @@ export const FileApi = {
       } 
 
     }catch (error) {
-      console.error('删除文件失败:', error);
+      console.error('Fail to delete file:', error);
       throw error;
     }
   },
 
-  addFile: async (filePath, fileInfo) => { 
+  writeFile: async (filePath, fileInfo) => { 
     try {
-      const response = await fetch(`${API_BASE_URL}/file/add`, {
+      console.log('writeFile:', filePath, fileInfo);
+      const response = await fetch(`${API_BASE_URL}/file/write/file`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ path: filePath, info: fileInfo })
+        body: JSON.stringify({path: filePath, info: fileInfo })
       });
+
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       } 
 
     }catch (error) {
-      console.error('删除文件失败:', error);
+      console.error('Fail to write file:', error);
+      throw error;
+    }
+  },
+  writeFolder: async (folderPath) => { 
+    try {
+      const response = await fetch(`${API_BASE_URL}/file/write/folder`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({path: folderPath })
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+    }catch (error) {
+      console.error('Fail to write folder:', error);
       throw error;
     }
   },
@@ -236,7 +275,40 @@ export const FileApi = {
   refresh: async () => {
     return await FileApi.getList();
   },
+}
+export const runTimeApi = {
+  getCurrent: async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/file/runtime/read`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Fail to get current run time info:', error);
+      throw error;
+    }
+  },
 
-
-
+  saveCurrent: async (runTimeInfo) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/file/runtime/write`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(runTimeInfo)
+      });
+      
+      if (!response.ok) { 
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Fail to save current run time info:', error);
+      throw error;
+    }
+  }
 }

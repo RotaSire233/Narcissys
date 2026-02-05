@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { ELEMENT_TYPES, useCanvas } from './CanvasCommon';
+import { ELEMENT_TYPES } from './configs/base_element';
 import './tool_box.css';
 
 export function ToolBox({style}) { 
-  const canvas = useCanvas();
   const [tooltipVisible, setTooltipVisible] = useState(false);
   const [tooltipContent, setTooltipContent] = useState(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });

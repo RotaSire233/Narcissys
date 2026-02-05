@@ -1,0 +1,79 @@
+{
+    "rungs": [
+        {
+            "id": "rung_1769517340217_eg4tspc3w",
+            "index": 0,
+            "elements": [
+                {
+                    "id": "normal_open_1769517346252_pd8g2n9nu",
+                    "type": {
+                        "id": "normal_open",
+                        "icon": "| |",
+                        "name": "\u5e38\u5f00\u89e6\u70b9",
+                        "tooltip": "",
+                        "canConnectLeft": true,
+                        "canConnectRight": true
+                    },
+                    "position": {
+                        "x": 90,
+                        "y": 40
+                    },
+                    "properties": {},
+                    "comments": ""
+                },
+                {
+                    "id": "normal_closed_1769580614522_9agzlhlnq",
+                    "type": {
+                        "id": "normal_closed",
+                        "icon": "|/|",
+                        "name": "\u5e38\u95ed\u89e6\u70b9",
+                        "tooltip": "",
+                        "canConnectLeft": true,
+                        "canConnectRight": true
+                    },
+                    "position": {
+                        "x": 150,
+                        "y": 40
+                    },
+                    "properties": {},
+                    "comments": ""
+                },
+                {
+                    "id": "coil_1769580656593_ksw29ppra",
+                    "type": {
+                        "id": "coil",
+                        "icon": "( )",
+                        "name": "\u8f93\u51fa\u7ebf\u5708",
+                        "tooltip": "",
+                        "canConnectLeft": true,
+                        "canConnectRight": false
+                    },
+                    "position": {
+                        "x": 210,
+                        "y": 40
+                    },
+                    "properties": {},
+                    "comments": ""
+                }
+            ],
+            "rung_bbox": []
+        }
+    ],
+    "selectedElement": {
+        "id": "normal_open_1769517346252_pd8g2n9nu",
+        "type": {
+            "id": "normal_open",
+            "icon": "| |",
+            "name": "\u5e38\u5f00\u89e6\u70b9",
+            "tooltip": "",
+            "canConnectLeft": true,
+            "canConnectRight": true
+        },
+        "position": {
+            "x": 90,
+            "y": 40
+        },
+        "properties": {},
+        "comments": ""
+    }
+}

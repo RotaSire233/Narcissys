@@ -1,7 +1,7 @@
 import { ConnectDownSvg, ConnectUpSvg, 
 CoilSvg, NormalOpenSvg, 
 NormalClosedSvg, ModelSvg,
-ConnectRightSvg } from './svgs'
+ConnectRightSvg } from './configs/base_svgs'
 import { useCanvas } from './CanvasCommon';
 import React, { useState, useRef } from 'react';
 

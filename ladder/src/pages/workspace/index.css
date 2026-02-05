@@ -102,37 +102,6 @@
 }
 
 
-
-.workspace-canvas-terminal {
-  flex: 1;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.workspace-canvas-terminal .canvas-container {
-  display: flex;
-  flex-direction: row;
-  overflow: auto;
-  min-width: 0;
-}
-
-
-.ct-drag-bar{ 
-  height: 6px;
-  width: 100%;
-  background-color: hsl(0, 0%, 70%);
-  cursor: row-resize;
-  top: 0;
-  right: 0;
-  z-index: 10;
-}
-
-.ct-drag-bar.active {
-  background-color: #464646;;
-}
-
 .workspace-setting{
   display: flex;
   height: calc(100vh - 60px);

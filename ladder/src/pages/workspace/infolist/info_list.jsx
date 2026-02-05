@@ -52,7 +52,7 @@ const InfoList = () => {
 
     const handleSensorClick = (sensorId) => {
         setSelectedSensor(sensorId);
-        console.log(`传感器 ${sensorId} 被选中`);
+        console.log(`Sensor ${sensorId} chosen`);
     }
 
     return (

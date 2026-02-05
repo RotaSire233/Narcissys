@@ -1,8 +1,17 @@
-import React, { useState } from 'react';
+import React, { use, useEffect, useState } from 'react';
 import './canvas_title.css';
+import SettingWindow from '../../../components/setting_window/SettingWindow';
+import {NewProject} from './configs/canvas_title';
+import EventBus from '../../../components/event_bus/EventBus';
+import NoticeWindow from '../../../components/notice_window/NoticeWindow';
+import OsFile, * as OSFile from '../../../components/utils/OsFile';
 
 const GroupTabs = () => {
   const [openGroup, setOpenGroup] = useState(null);
+  const [showNewModal, setShowNewModal] = useState(false);
+  const [showNotice, setShowNotice] = useState(false);
+  const [noticeMessage, setNoticeMessage] = useState('');
+  const [noticeType, setNoticeType] = useState('success');
   
   const groups = [
     {
@@ -10,7 +19,7 @@ const GroupTabs = () => {
       name: '文件',
       subTabs: [
         { id: 'new', name: '新建' },
-        { id: 'open', name: '打开' },
+        { id: 'open', name: '运行' },
         { id: 'save', name: '保存' },
         { id: 'save-as', name: '另存为' }
       ]
@@ -43,6 +52,7 @@ const GroupTabs = () => {
     }
   ];
 
+
   const toggleGroup = (groupId) => {
     if (openGroup === groupId) {
       setOpenGroup(null);
@@ -53,7 +63,39 @@ const GroupTabs = () => {
 
   const handleSubTabClick = (groupId, subTabId) => {
     console.log(`Selected: ${groupId} -> ${subTabId}`);
+    
+    if (groupId === 'file') {
+      switch (subTabId) {
+        case 'new':
+          setShowNewModal(true);
+          break;
+        case 'save':
+          EventBus.emit('saveFile');
+          break;
+        default:
+          break;
+      }
+    }
+    
     setOpenGroup(null); 
+  };
+
+  const handleNewProjectSave = async (formData) => {
+    console.log('New Project Form Data:', formData);
+    const combinedPath = OSFile.joinPath(formData.projectType, `${formData.projectName}.json`);
+    try {
+      EventBus.emit('addPage', formData.projectName, combinedPath);  
+      setShowNewModal(false); 
+    } catch (error) {
+      console.error('Failed to create project file:', error);
+    }
+  };
+
+
+
+
+  const handleNewProjectClose = () => {
+    setShowNewModal(false);
   };
 
   return (
@@ -87,6 +129,24 @@ const GroupTabs = () => {
           </div>
         ))}
       </div>
+
+      <NoticeWindow
+        visible={showNotice}
+        message={noticeMessage}
+        type={noticeType}
+        duration={3000}
+        onClose={() => setShowNotice(false)}
+      />
+
+
+      <SettingWindow
+        title="新建项目"
+        settings={NewProject.projectTypes}
+        theme="default"
+        visible={showNewModal}
+        onClose={handleNewProjectClose}
+        onSave={handleNewProjectSave}
+      />
     </div>
   );
 };

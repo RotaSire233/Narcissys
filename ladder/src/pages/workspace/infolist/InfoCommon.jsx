@@ -1,10 +1,6 @@
-import { LLMApi, MqttApi, FileApi } from '../../../services/api';
-import React, {createContext, useState,useContext, useEffect, use } from 'react';
-
-// 创建网络数据上下文
+import { LLMApi, MqttApi } from '../../../services/api';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 export const NetWorkContext = createContext();
-// 创建文件数据上下文
-export const FileContext = createContext();
 
 // 创建网关信息接口 hook
 export const useNetWorkInfo = () => {
@@ -15,7 +11,7 @@ export const useNetWorkInfo = () => {
   return context;
 };
 
-export function NetWorkInfo({ children }){ 
+export function NetWorkInfo({ children }) {
   const [apiKeys, setApiKeys] = useState({});
   const [mqttClients, setMqttClients] = useState({});
   const [apiLoading, setApiLoading] = useState(false);
@@ -23,36 +19,32 @@ export function NetWorkInfo({ children }){
   const [apiError, setApiError] = useState(null);
   const [mqttError, setMqttError] = useState(null);
 
-  const [fileList, setFileList] = useState([]);
-  const [fileTree, setFileTree] = useState([]);
-  const [fileLoading, setFileLoading] = useState(false);
-  const [fileError, setFileError] = useState(null);
   // 获取API密钥
   const fetchApiKeys = async () => {
-      setApiLoading(true);
-      setApiError(null);
-      try {
-        const data = await LLMApi.getList();
-        setApiKeys(data);
-      } catch (err) {
-        setApiError(err.message);
-        console.error('获取API密钥信息失败:', err);
-      } finally {
-        setApiLoading(false);
-      }
-    };
+    setApiLoading(true);
+    setApiError(null);
+    try {
+      const data = await LLMApi.getList();
+      setApiKeys(data);
+    } catch (err) {
+      setApiError(err.message);
+      console.error('Fetch API keys failed:', err);
+    } finally {
+      setApiLoading(false);
+    }
+  };
+  
   // 处理API密钥更改
   const handleApiKeyChange = (modelName, value) => {
-    setApiKeys(prev => ({...prev, [modelName]: value}));
+    setApiKeys(prev => ({ ...prev, [modelName]: value }));
   };
   
   // 保存API密钥更改
   const saveApiKeyChange = async (modelName, value) => {
     try {
       await LLMApi.modifyList(modelName, value);
-
     } catch (err) {
-      console.error('保存API密钥失败:', err);
+      console.error('Failed to save API key:', err);
       fetchApiKeys();
     }
   };
@@ -66,7 +58,7 @@ export function NetWorkInfo({ children }){
       setMqttClients(data);
     } catch (err) {
       setMqttError(err.message);
-      console.error('获取MQTT客户端信息失败:', err);
+      console.error('Failed to fetch MQTT clients:', err);
     } finally {
       setMqttLoading(false);
     }
@@ -81,106 +73,11 @@ export function NetWorkInfo({ children }){
       setMqttClients(data);
     } catch (err) {
       setMqttError(err.message);
-      console.error('刷新MQTT客户端信息失败:', err);
+      console.error('Failed to refresh MQTT clients:', err);
     } finally {
       setMqttLoading(false);
     }
   };
-  
-  const fetchFile= async () => {
-    setApiLoading(true);
-    setApiError(null);
-    try {
-      const data = await FileApi.getList();
-      console.log('Received file data:', data);
-      setFileList(data);
-      setFileTree(convertPathsToTree(data));
-    } catch (err) {
-      setFileError(err.message);
-      console.error('获取文件列表失败:', err);
-    } finally {
-      setFileLoading(false);
-
-    }
-  }
-
-  const refreshFile = async () => {
-    setFileLoading(true);
-    setFileError(null);
-    try {
-      const data = await FileApi.refresh();
-      setFileList(data);
-      setFileTree(convertPathsToTree(data));
-    } catch (err) {
-      setFileError(err.message);
-      console.error('刷新文件列表失败:', err);
-    } finally {
-      setFileLoading(false);
-    }
-  }
-
-  const add_file = async (filePath, fileInfo) => {
-     try{
-      await FileApi.addFile(filePath, fileInfo);
-     } catch (err) {
-       console.error('添加文件失败:', err);
-     }
-     fetchFile();
-  }
-
-  const delete_file = async (filePath) => {
-     try{
-      await FileApi.deleteFile(filePath);
-     } catch (err) {
-       console.error('删除文件失败:', err);
-     }
-     fetchFile();
-  }
-
-   const convertPathsToTree = (paths) => {
-        const root = { children: [] };
-        
-        paths.forEach(pathObj => {
-          const path = pathObj.file;
-          const type = pathObj.type;
-          const parts = path.replace(/^\\/, '').split('\\').filter(part => part !== '');
-          
-          if (parts.length === 0) return;
-          
-          let current = root;
-          
-          for (let i = 0; i < parts.length; i++) {
-            const part = parts[i];
-            const isLast = i === parts.length - 1;
-            
-            if (!current.children) {
-              current.children = [];
-            }
-            
-            let existingNode = current.children.find(child => child.name === part);
-            
-            if (!existingNode) {
-              existingNode = {
-                name: part,
-                type: isLast ? type : 'folder',
-                toggled: false,
-              };
-              
-              if (!isLast) {
-                existingNode.children = [];
-              }
-              
-              current.children.push(existingNode);
-            }
-            
-            if (!isLast) {
-              current = existingNode;
-            }
-          }
-        });
-        
-        return root.children;
-      };
 
   return (
     <NetWorkContext.Provider value={{
@@ -190,31 +87,14 @@ export function NetWorkInfo({ children }){
       mqttClients,
       mqttLoading,
       mqttError,
-      fileTree,
-      fileLoading,
-      fileError,
       
       fetchApiKeys,
       handleApiKeyChange,
       saveApiKeyChange,
       fetchMqttClients,
-      refreshMqttClients,
-      fetchFile,
-      refreshFile,
-      add_file,
-      delete_file
+      refreshMqttClients
     }}>
       {children}
     </NetWorkContext.Provider>
   );
-
-};
-
-// 创建文件信息接口 hook
-export const useFileInfo = () => {
-  const context = useContext(NetWorkContext);
-  if (!context) {
-    throw new Error('useInfo must be used within a CanvasProvider');
-  }
-  return context;
-};
+}

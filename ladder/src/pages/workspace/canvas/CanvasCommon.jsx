@@ -1,6 +1,5 @@
-import { ladderApi } from "../../../services/api";
 import React, {createContext, useState,useContext, useEffect } from 'react';
-
+import {ELEMENT_TYPES} from "./configs/base_element";
 
 // 网格参数
 const CANVAS_GRID_SIZE = 20; // 网格尺寸(px)
@@ -11,66 +10,6 @@ export const RUNG_LEFT_MARGIN = 60; // 左侧母线间距
 export const ELEMENT_SPACING = 60;  // 元件间距
 export const ELEMENT_AREA_WIDTH = 60;  // 元件区域宽度
 export const ELEMENT_AREA_HEIGHT = 60; // 元件区域高度
-
-// 元件类型
-export const ELEMENT_TYPES = {
-  NORMAL_OPEN: { 
-    id: 'normal_open', 
-    icon: '| |', 
-    name: '常开触点',
-    tooltip: '',
-    canConnectLeft: true,
-    canConnectRight: true
-  },
-  NORMAL_CLOSED: { 
-    id: 'normal_closed', 
-    icon: '|/|', 
-    name: '常闭触点',
-    tooltip: '',
-    canConnectLeft: true,
-    canConnectRight: true
-  },
-  COIL: { 
-    id: 'coil', 
-    icon: '( )', 
-    name: '输出线圈',
-    tooltip: '',
-    canConnectLeft: true,
-    canConnectRight: false
-  },
-  MODEL: {
-    id: 'model',
-    icon: '-□-',
-    name: '模型',
-    tooltip: '',
-    canConnectLeft: true,
-    canConnectRight: true
-  },
-  CONNECT_UP: { 
-    id: 'connect_up', 
-    icon: '↑', 
-    name: '向上连接',
-    tooltip: '',
-    canConnectLeft: true,
-    canConnectRight: false
-  },
-  CONNECT_DOWN: { 
-    id: 'connect_down', 
-    icon: '↓', 
-    name: '向下连接',
-    tooltip: '',
-    canConnectLeft: true,
-    canConnectRight: true
-  },
-  CONNECT_RIGHT: {
-    id: 'connect_right',
-    icon: '→',
-    name: '向右连接',
-    tooltip: '',
-    canConnectLeft: true,
-    canConnectRight: true
-  },
-};
 
 // 创建组件
 const createElement = (typeId, position) => {
@@ -89,7 +28,7 @@ const createElement = (typeId, position) => {
 };
 
 // 创建梯级
-const createRung = (id, index) => ({
+export const createRung = (id, index) => ({
   id: id || `rung_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
   index: index,
   elements: [],
@@ -162,11 +101,16 @@ export const useCanvas = () => {
   }
   return context;
 };
-export function CanvasProvider({ children }) {
-  const [rungs, setRungs] = useState([createRung(null, 0)]); // 初始创建一个梯级
-  const [selectedElement, setSelectedElement] = useState(null);
+export function CanvasProvider({ children, curRungs, curElement, canvasId }) {
+  const [rungs, setRungs] = useState(curRungs || [createRung(null, 0)]);
+  const [selectedElement, setSelectedElement] = useState(curElement || null);
   const [selectedRung, setSelectedRung] = useState(0); // 当前选中的梯级索引
   const [invalidElements, setInvalidElements] = useState([]); // 非法元件ID列表
+
+  useEffect(() => {
+    setRungs(curRungs || [createRung(null, 0)]);
+    setSelectedElement(curElement || null);
+  }, [canvasId]);
     
   // 内宽和外宽状态
   const [canvasWidth, setCanvasWidth] = useState(1000); // 外宽
@@ -263,80 +207,185 @@ export function CanvasProvider({ children }) {
       setCanvasWidth(newCanvasWidth);
     }
   };
-    
-    // 监听元件变化，更新画布宽度
+
   useEffect(() => {
     updateCanvasWidth();
   }, [rungs]);
+
+  const validateComponentConnections = (element, adjacentElements) => {
+    const elementType = element.type.id;
+    const elementDef = ELEMENT_TYPES[elementType.toUpperCase()] || ELEMENT_TYPES[elementType];
+    
+    if (adjacentElements.left) {
+      const leftElementType = adjacentElements.left.type.id;
+      const leftDef = ELEMENT_TYPES[leftElementType.toUpperCase()] || ELEMENT_TYPES[leftElementType];
+      
+      if (!elementDef.canConnectLeft || !leftDef.canConnectRight) {
+        return false;
+      }
+      
+      if (elementType === ELEMENT_TYPES.CONNECT_DOWN.id && !adjacentElements.left) {
+        return false;
+      }
+    }
+    
+    if (adjacentElements.right) {
+      const rightElementType = adjacentElements.right.type.id;
+      const rightDef = ELEMENT_TYPES[rightElementType.toUpperCase()] || ELEMENT_TYPES[rightElementType];
+      
+      if (!elementDef.canConnectRight || !rightDef.canConnectLeft) {
+        return false;
+      }
+      
+      if (elementType === ELEMENT_TYPES.CONNECT_UP.id && adjacentElements.right) {
+        return false;
+      }
+      
+      if (elementType === ELEMENT_TYPES.CONNECT_RIGHT.id && adjacentElements.left) {
+        return false;
+      }
+    }
+    
+    if (elementType === ELEMENT_TYPES.COIL.id && adjacentElements.right) {
+      return false;
+    }
+    
+    return true;
+  };
+
+  const validateLadderStructure = (rungs) => {
+    const invalidElements = [];
+    
+    rungs.forEach(rung => {
+      rung.elements.forEach(element => {
+        const elementArea = findElementArea(element.position);
+        
+        const leftElement = rung.elements.find(el => {
+          const elArea = findElementArea(el.position);
+          return elArea.areaY === elementArea.areaY && elArea.areaX === elementArea.areaX - 1;
+        });
+        
+        const rightElement = rung.elements.find(el => {
+          const elArea = findElementArea(el.position);
+          return elArea.areaY === elementArea.areaY && elArea.areaX === elementArea.areaX + 1;
+        });
+        
+        const upElement = rung.elements.find(el => {
+          const elArea = findElementArea(el.position);
+          return elArea.areaX === elementArea.areaX && elArea.areaY === elementArea.areaY - 1;
+        });
+        
+        const downElement = rung.elements.find(el => {
+          const elArea = findElementArea(el.position);
+          return elArea.areaX === elementArea.areaX && elArea.areaY === elementArea.areaY + 1;
+        });
+
+        const isValid = validateComponentConnections(element, {
+          left: leftElement,
+          right: rightElement,
+          up: upElement,
+          down: downElement
+        });
+        
+        if (!isValid) {
+          invalidElements.push(element.id);
+        }
+
+        if (element.type.id === ELEMENT_TYPES.COIL.id) {
+          if (rightElement) {
+            invalidElements.push(element.id);
+          }
+          
+          if (!leftElement) {
+            invalidElements.push(element.id);
+          }
+        }
+      });
+    });
+    
+    return {
+      valid: invalidElements.length === 0,
+      invalidElements: invalidElements
+    };
+  };
+    
+  
     
   // 添加元件到指定梯级（符合梯形图规范）
-  const addElement = async (typeId, position, rungIndex = selectedRung) => {
+  const addElement = (typeId, position, rungIndex = selectedRung) => {
     try {
-      // 确保元件不能放置在母线区域（左侧边缘）
       if (position.x < RUNG_LEFT_MARGIN) {
-        console.log("不能在母线区域放置元件");
+        console.log("[CanvasCommon]: Cannot place element on the left margin");
         return null;
       }
         
-      // 找到放置位置对应的区域
       const targetArea = findElementArea(position);
         
-      // 检查该区域是否符合梯形图放置规则
       const rung = rungs[rungIndex];
       if (!canPlaceElement(rungIndex, targetArea.areaX, targetArea.areaY, rung.elements)) {
-        console.log("不符合梯形图放置规则");
+        console.log("[CanvasCommon]: Element placement does not follow ladder rules");
         return null;
       }
         
-      // 检查该区域是否已被占用
       if (isAreaOccupied(rungIndex, targetArea.areaX, targetArea.areaY)) {
-        console.log("区域已被占用，无法放置元件");
-        return null; // 区域已被占用，不放置新元件
+        console.log("[CanvasCommon]: Area is already occupied, cannot place element");
+        return null;
       }
-        
-      // 计算区域中心位置
+
       const elementPosition = {
         x: RUNG_LEFT_MARGIN + targetArea.areaX * ELEMENT_AREA_WIDTH + ELEMENT_AREA_WIDTH / 2,
         y: RUNG_HEIGHT / 2 + targetArea.areaY * ELEMENT_AREA_HEIGHT
       };
         
       const newElement = createElement(typeId, elementPosition);
-      try{
-          const response = await ladderApi.addComponent(
-          {
-            id: newElement.id,
-            bbox: [
-              elementPosition.x - ELEMENT_AREA_WIDTH / 2,
-              elementPosition.y - ELEMENT_AREA_HEIGHT / 2,
-              elementPosition.x + ELEMENT_AREA_WIDTH / 2,
-              elementPosition.y + ELEMENT_AREA_HEIGHT / 2
-            ],
-            type: newElement.type.id,
-          }, rungIndex);
-            
-          // 处理非法元件ID列表
-          if (response && response.valid) {
-            setInvalidElements(response.valid);
-          }
-      }catch (error) {
-        console.error("后端添加元件失败:", error);
+      const leftElement = rung.elements.find(el => {
+        const elArea = findElementArea(el.position);
+        return elArea.areaY === targetArea.areaY && elArea.areaX === targetArea.areaX - 1;
+      });
+      
+      const rightElement = rung.elements.find(el => {
+        const elArea = findElementArea(el.position);
+        return elArea.areaY === targetArea.areaY && elArea.areaX === targetArea.areaX + 1;
+      });
+      
+      const upElement = rung.elements.find(el => {
+        const elArea = findElementArea(el.position);
+        return elArea.areaX === targetArea.areaX && elArea.areaY === targetArea.areaY - 1;
+      });
+      
+      const downElement = rung.elements.find(el => {
+        const elArea = findElementArea(el.position);
+        return elArea.areaX === targetArea.areaX && elArea.areaY === targetArea.areaY + 1;
+      });
+      
+      const isValidConnection = validateComponentConnections(newElement, {
+        left: leftElement,
+        right: rightElement,
+        up: upElement,
+        down: downElement
+      });
+      
+      if (!isValidConnection) {
+        console.log("[CanvasCommon]: Component connection rules validation failed");
+        return null;
       }
-  
+      
       setRungs(prev => {
         const newRungs = [...prev];
-        const rung = {...newRungs[rungIndex]};
-          
-        // 直接添加元件，不进行排序
-        rung.elements = [...rung.elements, newElement];
-          
-        newRungs[rungIndex] = rung;
+        newRungs[rungIndex] = {
+          ...newRungs[rungIndex],
+          elements: [...newRungs[rungIndex].elements, newElement]
+        };
         return newRungs;
       });
-        
-      setSelectedElement(newElement);
+
+      const validationResult = validateLadderStructure([...rungs]);
+      setInvalidElements(validationResult.invalidElements);
+      
       return newElement;
     } catch (error) {
-      console.error("Error adding element:", error);
+      console.error("[CanvasCommon]: Failed to add element:", error);
+      return null;
     }
   };
     
@@ -349,7 +398,7 @@ export function CanvasProvider({ children }) {
   const updateElementPosition = (id, newPosition, rungIndex = selectedRung) => {
     // 确保元件不能放置在母线区域（左侧边缘）
     if (newPosition.x < RUNG_LEFT_MARGIN) {
-      console.log("不能在母线区域放置元件");
+      console.log("[CanvasCommon]: Cannot place element on the left margin");
       return;
     }
       
@@ -363,7 +412,7 @@ export function CanvasProvider({ children }) {
           
         // 检查该区域是否符合梯形图放置规则
         if (!canPlaceElement(rungIndex, targetArea.areaX, targetArea.areaY, newRungs[rungIndex].elements)) {
-          console.log("不符合梯形图放置规则");
+          console.log("[CanvasCommon]: Element placement does not follow ladder rules");
           return prev;
         }
           
@@ -391,31 +440,27 @@ export function CanvasProvider({ children }) {
   };
     
   // 删除元件
-  const removeElement = async (id, rungIndex = selectedRung) => {
-    try {
-      const response = await ladderApi.deleteComponent(id, rungIndex);
-        
-      // 处理非法元件ID列表
-      if (response && response.valid) {
-        setInvalidElements(response.valid);
-      }
-    } catch (error) {
-      console.error("后端删除元件失败:", error);
-    }
+  const removeElement = (id, rungIndex = selectedRung) => {
     setRungs(prev => {
       const newRungs = [...prev];
       const elementIndex = newRungs[rungIndex].elements.findIndex(el => el.id === id);
-        
+      
       if (elementIndex !== -1) {
         newRungs[rungIndex] = {
           ...newRungs[rungIndex],
           elements: newRungs[rungIndex].elements.filter(el => el.id !== id)
         };
       }
-        
+      
       return newRungs;
     });
-      
+  
+    setRungs(prev => {
+      const validationResult = validateLadderStructure(prev);
+      setInvalidElements(validationResult.invalidElements);
+      return prev;
+    });
+    
     if (selectedElement && selectedElement.id === id) {
       setSelectedElement(null);
     }
@@ -512,6 +557,13 @@ export function CanvasProvider({ children }) {
       
     return connections;
   };
+
+  const exportCanvasState = () => {
+    return {
+      rungs,
+      selectedElement,
+    };
+  };
   
   return (
     <CanvasContext.Provider value={{
@@ -532,7 +584,8 @@ export function CanvasProvider({ children }) {
       setCanvasWidth,
       setContentWidth,
       invalidElements,
-      getElementConnections
+      getElementConnections,
+      exportCanvasState
     }}>
       {children}
     </CanvasContext.Provider>
